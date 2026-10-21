@@ -60,11 +60,20 @@ npm install -g crawlmind
 ```
 
 ```bash
-crawlmind crawl https://example.com          # crawl with live progress, Ctrl+C to stop early
+crawlmind crawl https://example.com          # crawl with live progress, then a summary
 crawlmind crawl https://example.com -n 2000  # up to 2,000 pages
+crawlmind summary                            # key numbers and top issues of the latest crawl
+crawlmind issues --severity critical         # issues with examples
+crawlmind issues --check links.broken_internal   # every affected URL of one check
+crawlmind page /pricing                      # everything about one URL
+crawlmind links /pricing --content-only      # who links here, from the main content
+crawlmind top --by underlinked               # important pages that need more links
+crawlmind sql "SELECT url, ttfb_ms FROM pages ORDER BY ttfb_ms DESC LIMIT 10"
 crawlmind crawls                             # past crawls
-crawlmind --json crawl https://example.com   # JSON on stdout, progress on stderr
 ```
+
+Every command takes `--json` for machine-readable output (progress goes to stderr). In CI,
+`crawlmind crawl <url> --fail-on critical` exits with code 1 when critical issues are found.
 
 The CLI and the MCP server share one local database, so you can crawl from the terminal and then
 ask your AI client about the result.
@@ -78,13 +87,49 @@ ask your AI client about the result.
 
 ## MCP tools
 
-| Tool               | What it does                                                   |
-| ------------------ | -------------------------------------------------------------- |
-| `start_crawl`      | Start a background crawl and return its `crawl_id`             |
-| `get_crawl_status` | Progress of a crawl; `wait_seconds` waits and streams progress |
-| `cancel_crawl`     | Stop a running crawl, keeping the pages fetched so far         |
-| `list_crawls`      | Past and running crawls, filterable by site                    |
-| `ping`             | Health check                                                   |
+| Tool               | What it does                                                                 |
+| ------------------ | ---------------------------------------------------------------------------- |
+| `start_crawl`      | Start a background crawl and return its `crawl_id`                           |
+| `get_crawl_status` | Progress of a crawl; `wait_seconds` waits and streams progress               |
+| `cancel_crawl`     | Stop a running crawl, keeping the pages fetched so far                       |
+| `list_crawls`      | Past and running crawls, filterable by site                                  |
+| `get_summary`      | Key numbers and top issues by severity, with examples and recommendations    |
+| `get_issues`       | Issues filtered by severity; with `check_id`, every affected URL (paginated) |
+| `get_page`         | Everything about one URL: status, redirects, metadata, timings, link metrics |
+| `get_links`        | Inlinks or outlinks of a URL with anchors, `rel` and placement               |
+| `get_top_pages`    | Pages by PageRank, inlinks, depth, TTFB, or `underlinked` important pages    |
+| `query_data`       | Read-only SQL `SELECT` on the crawl database, row-limited                    |
+| `ping`             | Health check                                                                 |
+
+Resources: `crawlmind://checks/{id}` documents each check (why it matters, how to fix), and
+`crawlmind://crawls/{id}/summary` gives the summary of a crawl.
+
+## Checks
+
+Every issue has the same shape: `id`, `severity` (critical, warning, info), `title`, `count`,
+up to five `examples` and a `recommendation`.
+
+| Area      | Checks                                                                                                 |
+| --------- | ------------------------------------------------------------------------------------------------------ |
+| Status    | 4xx and 5xx pages, unreachable pages                                                                   |
+| Links     | broken internal and external links, links to redirects, internal `nofollow`, generic and empty anchors |
+| Redirects | chains longer than one hop, loops                                                                      |
+| Sitemap   | orphan pages, `noindex` pages listed, non-200 URLs listed                                              |
+| Canonical | canonical to an error page, to a redirect, to a different page                                         |
+| Content   | missing or duplicate titles, meta descriptions and H1, thin content (default < 200 words)              |
+| Structure | pages more than 3 clicks deep                                                                          |
+| Speed     | TTFB over 800 ms, HTML over 1 MB, mixed content                                                        |
+
+Generic anchors ("click here", "read more", "подробнее", "mehr erfahren", …) are listed per
+language in [`generic-anchors.ts`](packages/crawlmind/src/core/config/generic-anchors.ts).
+
+### Link graph
+
+Inlinks and outlinks are counted per page and by placement (nav, header, footer, main, other),
+with links through redirects credited to the final page. Click depth is a breadth-first search
+from the start URL. Internal PageRank uses damping 0.85, spreads the rank of pages without
+outlinks evenly, ignores `nofollow`, and iterates until the total change is below 1e-6;
+scores are shown 0–100 relative to the strongest page.
 
 ## Crawling rules
 

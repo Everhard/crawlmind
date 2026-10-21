@@ -1,7 +1,10 @@
 import { Command, CommanderError } from 'commander';
 import { describeError, VERSION } from '../core/index.js';
+import { registerAuditCommands } from './commands/audit.js';
 import { registerCrawlCommand } from './commands/crawl.js';
 import { registerCrawlsCommand } from './commands/crawls.js';
+import { registerPageCommands } from './commands/pages.js';
+import { registerSqlCommand } from './commands/sql.js';
 import { CliContext, type GlobalOptions } from './context.js';
 
 export interface ProgramDeps {
@@ -35,6 +38,9 @@ export function createProgram(deps: ProgramDeps): Command {
 
   registerCrawlCommand(program, getContext);
   registerCrawlsCommand(program, getContext);
+  registerAuditCommands(program, getContext);
+  registerPageCommands(program, getContext);
+  registerSqlCommand(program, getContext);
 
   program
     .command('mcp')

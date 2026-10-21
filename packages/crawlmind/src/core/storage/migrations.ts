@@ -85,4 +85,41 @@ export const MIGRATIONS: readonly string[] = [
     PRIMARY KEY (crawl_id, url)
   );
   `,
+  // 2: analysis results
+  `
+  ALTER TABLE crawls ADD COLUMN analyzed_at TEXT;
+
+  CREATE TABLE page_metrics (
+    page_id           INTEGER PRIMARY KEY REFERENCES pages (id) ON DELETE CASCADE,
+    crawl_id          TEXT NOT NULL REFERENCES crawls (id) ON DELETE CASCADE,
+    indexable         INTEGER NOT NULL,
+    inlinks           INTEGER NOT NULL,
+    unique_inlinks    INTEGER NOT NULL,
+    main_inlinks      INTEGER NOT NULL,
+    outlinks          INTEGER NOT NULL,
+    external_outlinks INTEGER NOT NULL,
+    unique_anchors    INTEGER NOT NULL,
+    click_depth       INTEGER,
+    pagerank          REAL
+  );
+  CREATE INDEX page_metrics_crawl ON page_metrics (crawl_id);
+
+  CREATE TABLE issues (
+    crawl_id TEXT NOT NULL REFERENCES crawls (id) ON DELETE CASCADE,
+    check_id TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    count    INTEGER NOT NULL,
+    PRIMARY KEY (crawl_id, check_id)
+  );
+
+  CREATE TABLE issue_items (
+    id       INTEGER PRIMARY KEY,
+    crawl_id TEXT NOT NULL REFERENCES crawls (id) ON DELETE CASCADE,
+    check_id TEXT NOT NULL,
+    url      TEXT NOT NULL,
+    detail   TEXT
+  );
+  CREATE INDEX issue_items_check ON issue_items (crawl_id, check_id);
+  CREATE INDEX issue_items_url ON issue_items (crawl_id, url);
+  `,
 ];

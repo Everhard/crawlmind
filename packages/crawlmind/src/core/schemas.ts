@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CRAWL_DEFAULTS, CRAWL_LIMITS } from './config/limits.js';
+import { THRESHOLDS } from './config/thresholds.js';
 
 const httpUrl = z
   .string()
@@ -45,6 +46,13 @@ export const crawlOptionsShape = {
   includeSubdomains: z.boolean().default(CRAWL_DEFAULTS.includeSubdomains),
   checkExternalLinks: z.boolean().default(CRAWL_DEFAULTS.checkExternalLinks),
   respectRobots: z.boolean().default(CRAWL_DEFAULTS.respectRobots),
+  thinContentWords: z
+    .number()
+    .int()
+    .min(0)
+    .max(10_000)
+    .default(THRESHOLDS.thinContentWords)
+    .describe('Pages with fewer words of main content are reported as thin'),
   allowPrivateNetworks: z
     .boolean()
     .default(CRAWL_DEFAULTS.allowPrivateNetworks)

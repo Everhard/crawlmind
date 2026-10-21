@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { VERSION } from '../core/index.js';
 import type { ToolContext } from './context.js';
 import { toolResult } from './result.js';
+import { registerResources } from './resources.js';
+import { registerAuditTools } from './tools/audit.js';
 import { registerCrawlTools } from './tools/crawls.js';
 
 export function createServer(ctx: ToolContext): McpServer {
@@ -11,7 +13,9 @@ export function createServer(ctx: ToolContext): McpServer {
     {
       instructions:
         'Crawlmind crawls websites and audits technical SEO. Typical flow: start_crawl, then ' +
-        'get_crawl_status with wait_seconds until it completes, then inspect the results.',
+        'get_crawl_status with wait_seconds until it completes, then get_summary, get_issues ' +
+        '(with check_id for all affected URLs), get_page, get_links and get_top_pages. ' +
+        'crawlmind://checks/{id} explains each check.',
     },
   );
 
@@ -28,5 +32,7 @@ export function createServer(ctx: ToolContext): McpServer {
   );
 
   registerCrawlTools(server, ctx);
+  registerAuditTools(server, ctx);
+  registerResources(server, ctx);
   return server;
 }

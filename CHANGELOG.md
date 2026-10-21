@@ -27,4 +27,16 @@ All notable changes to this project are documented here. The format follows
   `cancel_crawl`, `list_crawls`.
 - CLI: `crawlmind crawl <url>` with live progress and Ctrl+C to cancel, `crawlmind crawls`,
   global `--json`, `--no-color`, `--home`.
+- Analysis after every crawl: 28 checks with one shared issue schema (status codes, broken
+  internal and external links, redirect chains and loops, links to redirects, orphan and
+  noindex sitemap pages, canonical problems, missing and duplicate titles, descriptions and H1,
+  thin content, deep pages, slow TTFB, large HTML, mixed content, internal nofollow, generic and
+  empty anchors in nine languages).
+- Link graph: inlinks and outlinks by placement, click depth, internal PageRank, and an
+  "under-linked important pages" ranking.
+- MCP tools `get_summary`, `get_issues`, `get_page`, `get_links`, `get_top_pages`, `query_data`
+  (read-only SQL on a separate read-only connection); resources `crawlmind://checks/{id}` and
+  `crawlmind://crawls/{id}/summary`.
+- CLI commands `summary`, `issues`, `page`, `links`, `top`, `sql`; `crawl` prints the summary
+  and supports `--fail-on` and `--thin-words`.
 - Build (tsup), lint (ESLint, Prettier), typecheck, tests (Vitest) and CI on Node 22 and 24.

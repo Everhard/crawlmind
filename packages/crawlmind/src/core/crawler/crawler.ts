@@ -180,7 +180,8 @@ export async function runCrawl(params: RunCrawlParams): Promise<CrawlStats> {
             ...emptyPage(url),
             depth,
             status: result.hops[0]?.status ?? null,
-            finalUrl: last && last.url !== url ? last.url : null,
+            // Only a chain that ended on a response has a final URL (not loops or errors).
+            finalUrl: result.final && last && last.url !== url ? last.url : null,
             fetchError: result.error,
             redirectCount: Math.max(0, result.hops.length - 1),
           },

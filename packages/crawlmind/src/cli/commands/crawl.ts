@@ -1,11 +1,14 @@
-import { InvalidArgumentError, type Command } from 'commander';
+import { InvalidArgumentError, Option, type Command } from 'commander';
 import {
   CRAWL_DEFAULTS,
   CRAWL_LIMITS,
+  THRESHOLDS,
   type CrawlInfo,
   type CrawlProgress,
+  type Severity,
 } from '../../core/index.js';
 import type { CliContext } from '../context.js';
+import { countAtLeast, printSummary } from './audit.js';
 import {
   displayUrl,
   formatDuration,
@@ -14,7 +17,6 @@ import {
   truncateMiddle,
 } from '../ui/format.js';
 import { createProgressLine } from '../ui/progress.js';
-import { renderFields } from '../ui/table.js';
 
 function intOption(min: number, max: number) {
   return (value: string): number => {
@@ -35,6 +37,8 @@ interface CrawlCommandOptions {
   external: boolean;
   robots: boolean;
   allowPrivate?: boolean;
+  thinWords: number;
+  failOn?: Severity;
 }
 
 export function registerCrawlCommand(program: Command, getContext: () => CliContext): void {
@@ -70,6 +74,18 @@ export function registerCrawlCommand(program: Command, getContext: () => CliCont
     .option('--no-external', 'skip checking external links')
     .option('--no-robots', 'ignore robots.txt')
     .option('--allow-private', 'allow localhost and private network addresses')
+    .option(
+      '--thin-words <n>',
+      'word count below which a page is thin',
+      intOption(0, 10_000),
+      THRESHOLDS.thinContentWords,
+    )
+    .addOption(
+      new Option(
+        '--fail-on <severity>',
+        'exit with code 1 if issues of this severity or worse exist (for CI)',
+      ).choices(['critical', 'warning', 'info']),
+    )
     .action(async (url: string, opts: CrawlCommandOptions) => {
       const ctx = getContext();
       const crawl = ctx.engine.crawls.start({
@@ -82,11 +98,26 @@ export function registerCrawlCommand(program: Command, getContext: () => CliCont
         checkExternalLinks: opts.external,
         respectRobots: opts.robots,
         allowPrivateNetworks: Boolean(opts.allowPrivate),
+        thinContentWords: opts.thinWords,
       });
       const finished = await followCrawl(ctx, crawl);
-      if (ctx.json) ctx.printJson(ctx.engine.crawls.status(finished.crawlId));
-      else printCrawlResult(ctx, finished);
-      if (finished.status === 'failed') process.exitCode = 1;
+      if (finished.status === 'failed') {
+        if (ctx.json) ctx.printJson(ctx.engine.crawls.status(finished.crawlId));
+        process.exitCode = 1;
+        return;
+      }
+      if (!ctx.json) ctx.out();
+      printSummary(ctx, finished.crawlId);
+      if (opts.failOn) {
+        const failing = countAtLeast(
+          ctx.engine.audit.summary(finished.crawlId).issueCounts,
+          opts.failOn,
+        );
+        if (failing > 0) {
+          process.stderr.write(`\n${failing} issue(s) at severity ${opts.failOn} or worse.\n`);
+          process.exitCode = 1;
+        }
+      }
     });
 }
 
@@ -144,24 +175,6 @@ async function followCrawl(ctx: CliContext, crawl: CrawlInfo): Promise<CrawlInfo
   else if (done.status === 'cancelled') spinner.warn(`Cancelled after ${summary}`);
   else spinner.fail(`Crawl failed: ${done.error ?? 'unknown error'}`);
   return done;
-}
-
-function printCrawlResult(ctx: CliContext, crawl: CrawlInfo): void {
-  const { c } = ctx.theme;
-  const statusColor =
-    crawl.status === 'completed' ? c.green : crawl.status === 'cancelled' ? c.yellow : c.red;
-  ctx.out();
-  ctx.out(
-    renderFields(ctx.theme, [
-      ['Crawl', c.bold(crawl.crawlId)],
-      ['Site', crawl.site],
-      ['Status', statusColor(crawl.status)],
-      ['Pages', formatNumber(crawl.pagesCrawled)],
-      ['Duration', formatDuration(crawl.durationMs)],
-    ]),
-  );
-  ctx.out();
-  ctx.out(`  ${c.dim('Next')}  crawlmind crawls --site ${crawl.site}`);
 }
 
 function stripAnsi(text: string): string {

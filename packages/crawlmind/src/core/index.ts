@@ -18,3 +18,34 @@ export { parseRobots } from './crawler/robots.js';
 export { parseSitemap } from './crawler/sitemap.js';
 export { Fetcher } from './crawler/fetcher.js';
 export { runCrawl } from './crawler/crawler.js';
+
+export { analyzeCrawl } from './analysis/analyze.js';
+export {
+  AuditService,
+  type CrawlSummary,
+  type PageDetails,
+  type LinkRow,
+  type TopPage,
+  type TopPagesBy,
+} from './analysis/audit.js';
+export {
+  CHECKS,
+  CHECKS_BY_ID,
+  IssueSchema,
+  IssueExampleSchema,
+  SeveritySchema,
+  SEVERITY_ORDER,
+  type CheckInfo,
+  type Issue,
+  type IssueExample,
+  type Severity,
+} from './analysis/checks.js';
+export { pageRank } from './analysis/pagerank.js';
+export {
+  QueryRunner,
+  QUERY_LIMITS,
+  QUERY_SCHEMA_HINT,
+  type QueryResult,
+} from './analysis/query.js';
+export { isGenericAnchor, GENERIC_ANCHORS } from './config/generic-anchors.js';
+export { THRESHOLDS } from './config/thresholds.js';
