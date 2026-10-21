@@ -29,6 +29,7 @@ blockedV6.addSubnet('fec0::', 10, 'ipv6'); // deprecated site-local
 blockedV6.addSubnet('ff00::', 8, 'ipv6'); // multicast
 blockedV6.addSubnet('2001::', 32, 'ipv6'); // Teredo (embeds an obfuscated IPv4)
 blockedV6.addSubnet('2001:db8::', 32, 'ipv6'); // documentation
+blockedV6.addSubnet('64:ff9b:1::', 48, 'ipv6'); // local-use NAT64 (operator-defined embedding)
 
 /** Expand an IPv6 address (any notation, incl. embedded dotted IPv4) to 8 16-bit groups. */
 export function ipv6Groups(ip: string): number[] | null {
@@ -57,8 +58,8 @@ function v4FromGroups(hi: number, lo: number): string {
 }
 
 /**
- * IPv4 addresses embedded in an IPv6 address by common transition mechanisms: IPv4-mapped
- * and -compatible (::ffff:0:0/96, ::/96), NAT64 (64:ff9b::/96, 64:ff9b:1::/48) and 6to4 (2002::/16).
+ * IPv4 addresses embedded at a fixed position by common transition mechanisms: IPv4-mapped
+ * (::ffff:0:0/96), IPv4-compatible (::/96), well-known NAT64 (64:ff9b::/96) and 6to4 (2002::/16).
  */
 function embeddedIPv4(g: number[]): string | null {
   const [g0, g1, g2, g3, g4, g5, g6, g7] = g as [
@@ -72,10 +73,11 @@ function embeddedIPv4(g: number[]): string | null {
     number,
   ];
   const zeroPrefix = g0 === 0 && g1 === 0 && g2 === 0 && g3 === 0 && g4 === 0;
-  if (zeroPrefix && (g5 === 0xffff || g5 === 0)) return v4FromGroups(g6, g7);
+  if (zeroPrefix && g5 === 0xffff) return v4FromGroups(g6, g7);
+  // In ::/96, `::` and `::1` are the IPv6 unspecified and loopback addresses, not IPv4.
+  if (zeroPrefix && g5 === 0 && (g6 !== 0 || g7 > 1)) return v4FromGroups(g6, g7);
   if (g0 === 0x64 && g1 === 0xff9b && g2 === 0 && g3 === 0 && g4 === 0 && g5 === 0)
     return v4FromGroups(g6, g7);
-  if (g0 === 0x64 && g1 === 0xff9b && g2 === 1) return v4FromGroups(g6, g7);
   if (g0 === 0x2002) return v4FromGroups(g1, g2);
   return null;
 }
@@ -87,11 +89,9 @@ export function isPrivateAddress(ip: string): boolean {
   if (family !== 6) return false;
   const groups = ipv6Groups(ip);
   if (!groups) return true; // unparseable: refuse rather than guess
+  if (blockedV6.check(groups.map((g) => g.toString(16)).join(':'), 'ipv6')) return true;
   const v4 = embeddedIPv4(groups);
-  // ::/96 with a zero IPv4 part is `::` or `::1`, handled by the IPv6 list.
-  if (v4 && v4 !== '0.0.0.0' && v4 !== '0.0.0.1') return blockedV4.check(v4, 'ipv4');
-  const canonical = groups.map((g) => g.toString(16)).join(':');
-  return blockedV6.check(canonical, 'ipv6');
+  return v4 !== null && blockedV4.check(v4, 'ipv4');
 }
 
 export function blockedAddressError(host: string, ip?: string): CrawlmindError {

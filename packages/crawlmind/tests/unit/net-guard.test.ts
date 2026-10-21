@@ -33,6 +33,11 @@ describe('isPrivateAddress', () => {
     '2001:0:4136:e378:8000:63bf:3fff:fdd2',
     'fe80::1%eth0',
     'fec0::1',
+    '::ffff:0.0.0.0',
+    '::ffff:0:0',
+    '::ffff:0.0.0.1',
+    '64:ff9b:1::808:808',
+    '2002::1',
   ])('blocks %s', (ip) => {
     expect(isPrivateAddress(ip)).toBe(true);
   });
