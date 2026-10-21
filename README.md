@@ -59,6 +59,13 @@ npx crawlmind --help
 npm install -g crawlmind
 ```
 
+```bash
+crawlmind crawl https://example.com          # crawl with live progress, Ctrl+C to stop early
+crawlmind crawl https://example.com -n 2000  # up to 2,000 pages
+crawlmind crawls                             # past crawls
+crawlmind --json crawl https://example.com   # JSON on stdout, progress on stderr
+```
+
 The CLI and the MCP server share one local database, so you can crawl from the terminal and then
 ask your AI client about the result.
 
@@ -68,6 +75,28 @@ ask your AI client about the result.
 | ----------------------------------------- | ----------------------------------------- |
 | [`crawlmind`](packages/crawlmind)         | Engine, CLI (`crawlmind`) and MCP server  |
 | [`crawlmind-mcp`](packages/crawlmind-mcp) | Shortcut binary that runs `crawlmind mcp` |
+
+## MCP tools
+
+| Tool               | What it does                                                   |
+| ------------------ | -------------------------------------------------------------- |
+| `start_crawl`      | Start a background crawl and return its `crawl_id`             |
+| `get_crawl_status` | Progress of a crawl; `wait_seconds` waits and streams progress |
+| `cancel_crawl`     | Stop a running crawl, keeping the pages fetched so far         |
+| `list_crawls`      | Past and running crawls, filterable by site                    |
+| `ping`             | Health check                                                   |
+
+## Crawling rules
+
+- Identifies itself as `CrawlmindBot/<version> (+https://github.com/Everhard/crawlmind)`.
+- Follows robots.txt, including `Crawl-delay` (capped at 10 s), unless told not to.
+- Defaults: 500 pages (hard cap 10,000), depth 10, 4 parallel requests, 250 ms between
+  requests to the same host, 15 s timeout, 5 MB per page.
+- Only `text/html` is parsed. Sitemaps (from robots.txt and `/sitemap.xml`, indexes and gzip
+  included) add URLs that links do not reach.
+- Refuses private, loopback and link-local addresses, checked on every connection and redirect
+  hop (DNS rebinding included). Pass `allowPrivateNetworks` / `--allow-private` for intranet
+  or local sites.
 
 ## Privacy
 

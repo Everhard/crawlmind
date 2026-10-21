@@ -49,8 +49,18 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
+    "better-sqlite3": "^13.0.3",
+    "cheerio": "^1.2.0",
+    "cli-table3": "^0.6.5",
     "commander": "^15.0.0",
+    "domhandler": "^5.0.3",
+    "ora": "^9.4.1",
     "picocolors": "^1.1.1",
+    "robots-parser": "^3.0.1",
+    "undici": "^8.12.3",
     "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0"
   }
 }
