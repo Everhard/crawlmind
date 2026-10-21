@@ -6,6 +6,7 @@ import { toolResult } from './result.js';
 import { registerResources } from './resources.js';
 import { registerAuditTools } from './tools/audit.js';
 import { registerCrawlTools } from './tools/crawls.js';
+import { registerSpeedTools } from './tools/speed.js';
 
 export function createServer(ctx: ToolContext): McpServer {
   const server = new McpServer(
@@ -15,6 +16,7 @@ export function createServer(ctx: ToolContext): McpServer {
         'Crawlmind crawls websites and audits technical SEO. Typical flow: start_crawl, then ' +
         'get_crawl_status with wait_seconds until it completes, then get_summary, get_issues ' +
         '(with check_id for all affected URLs), get_page, get_links and get_top_pages. ' +
+        'get_templates and measure_templates cover speed per template. ' +
         'crawlmind://checks/{id} explains each check.',
     },
   );
@@ -33,6 +35,7 @@ export function createServer(ctx: ToolContext): McpServer {
 
   registerCrawlTools(server, ctx);
   registerAuditTools(server, ctx);
+  registerSpeedTools(server, ctx);
   registerResources(server, ctx);
   return server;
 }

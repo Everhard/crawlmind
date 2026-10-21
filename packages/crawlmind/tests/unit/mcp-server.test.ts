@@ -38,6 +38,14 @@ describe('MCP server', () => {
         'get_crawl_status',
         'cancel_crawl',
         'list_crawls',
+        'get_summary',
+        'get_issues',
+        'get_page',
+        'get_links',
+        'get_top_pages',
+        'query_data',
+        'get_templates',
+        'measure_templates',
       ]),
     );
   });
@@ -138,6 +146,14 @@ describe('MCP server', () => {
       arguments: { sql: 'DROP TABLE pages' },
     });
     expect(write.isError).toBe(true);
+  });
+
+  it('lists templates', async () => {
+    const res = await client.callTool({ name: 'get_templates', arguments: { crawl_id: crawlId } });
+    const items = (res.structuredContent as { items: { label: string; pageCount: number }[] })
+      .items;
+    expect(items.find((t) => t.label === '/blog/*')?.pageCount).toBe(3);
+    expect(JSON.stringify(res.content)).toContain('measure_templates');
   });
 
   it('serves check docs and crawl summaries as resources', async () => {

@@ -68,6 +68,8 @@ crawlmind issues --check links.broken_internal   # every affected URL of one che
 crawlmind page /pricing                      # everything about one URL
 crawlmind links /pricing --content-only      # who links here, from the main content
 crawlmind top --by underlinked               # important pages that need more links
+crawlmind templates                          # page templates with TTFB per template
+crawlmind speed                              # PageSpeed Insights on template representatives
 crawlmind sql "SELECT url, ttfb_ms FROM pages ORDER BY ttfb_ms DESC LIMIT 10"
 crawlmind crawls                             # past crawls
 ```
@@ -87,19 +89,21 @@ ask your AI client about the result.
 
 ## MCP tools
 
-| Tool               | What it does                                                                 |
-| ------------------ | ---------------------------------------------------------------------------- |
-| `start_crawl`      | Start a background crawl and return its `crawl_id`                           |
-| `get_crawl_status` | Progress of a crawl; `wait_seconds` waits and streams progress               |
-| `cancel_crawl`     | Stop a running crawl, keeping the pages fetched so far                       |
-| `list_crawls`      | Past and running crawls, filterable by site                                  |
-| `get_summary`      | Key numbers and top issues by severity, with examples and recommendations    |
-| `get_issues`       | Issues filtered by severity; with `check_id`, every affected URL (paginated) |
-| `get_page`         | Everything about one URL: status, redirects, metadata, timings, link metrics |
-| `get_links`        | Inlinks or outlinks of a URL with anchors, `rel` and placement               |
-| `get_top_pages`    | Pages by PageRank, inlinks, depth, TTFB, or `underlinked` important pages    |
-| `query_data`       | Read-only SQL `SELECT` on the crawl database, row-limited                    |
-| `ping`             | Health check                                                                 |
+| Tool                | What it does                                                                 |
+| ------------------- | ---------------------------------------------------------------------------- |
+| `start_crawl`       | Start a background crawl and return its `crawl_id`                           |
+| `get_crawl_status`  | Progress of a crawl; `wait_seconds` waits and streams progress               |
+| `cancel_crawl`      | Stop a running crawl, keeping the pages fetched so far                       |
+| `list_crawls`       | Past and running crawls, filterable by site                                  |
+| `get_summary`       | Key numbers and top issues by severity, with examples and recommendations    |
+| `get_issues`        | Issues filtered by severity; with `check_id`, every affected URL (paginated) |
+| `get_page`          | Everything about one URL: status, redirects, metadata, timings, link metrics |
+| `get_links`         | Inlinks or outlinks of a URL with anchors, `rel` and placement               |
+| `get_top_pages`     | Pages by PageRank, inlinks, depth, TTFB, or `underlinked` important pages    |
+| `get_templates`     | Templates with page counts, TTFB median/p90 and PageSpeed results            |
+| `measure_templates` | Lighthouse (PageSpeed Insights) on 1–2 representatives per template          |
+| `query_data`        | Read-only SQL `SELECT` on the crawl database, row-limited                    |
+| `ping`              | Health check                                                                 |
 
 Resources: `crawlmind://checks/{id}` documents each check (why it matters, how to fix), and
 `crawlmind://crawls/{id}/summary` gives the summary of a crawl.
@@ -130,6 +134,44 @@ with links through redirects credited to the final page. Click depth is a breadt
 from the start URL. Internal PageRank uses damping 0.85, spreads the rank of pages without
 outlinks evenly, ignores `nofollow`, and iterates until the total change is below 1e-6;
 scores are shown 0–100 relative to the strongest page.
+
+## Speed by template
+
+Every crawled page gets its time to first byte and download time. Pages are then grouped into
+templates, and Lighthouse runs only on one or two representatives per template, so a site with
+thousands of product pages needs a handful of PageSpeed Insights calls instead of thousands:
+
+> 3,400 pages use template `/product/*` with mobile LCP 4.2 s (real-user, poor), score 38.
+> Fixing this one template improves all of them.
+
+How pages are grouped:
+
+1. **URL pattern.** Path segments are compared level by level. Numbers, dates, UUIDs, hex ids
+   and long slugs become `*`; siblings that differ only in digits (`post-1`, `post-2`) become
+   `*`; below the first level, four or more distinct sibling values become `*`. First-level
+   sections (`/blog`, `/shop`) are never merged by count alone.
+2. **DOM structure.** Each page's skeleton (the set of tag paths below `<body>`, six levels
+   deep, ignoring text and attributes) is reduced to a 32-value MinHash signature. Within one
+   URL pattern, pages whose estimated Jaccard similarity is at least 0.8 form one template,
+   so `/p/*` pages with two different layouts become two templates.
+3. **Representatives** are the pages whose TTFB is closest to the template median: typical,
+   not the best or worst case.
+
+PageSpeed Insights runs on demand (`measure_templates` / `crawlmind speed`), mobile by default,
+with a 60 s timeout and retries with backoff. Results (performance score, LCP, CLS, TBT, FCP,
+page weight and CrUX field data when Google has it) are stored per crawl and reused. Without
+`PSI_API_KEY` Crawlmind uses Google's shared keyless quota one request at a time, which is
+often exhausted; a [free API key](https://developers.google.com/speed/docs/insights/v5/get-started)
+raises it.
+
+## Configuration
+
+| Variable                           | Purpose                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------- |
+| `CRAWLMIND_HOME`                   | Data directory (default `~/.crawlmind`)                                   |
+| `PSI_API_KEY`                      | PageSpeed Insights API key                                                |
+| `CRAWLMIND_ALLOW_PRIVATE_NETWORKS` | `1` lets MCP clients crawl private and local addresses                    |
+| `CRAWLMIND_LOG_LEVEL`              | `debug`, `info`, `warn` (default), `error` or `silent`; logs go to stderr |
 
 ## Crawling rules
 

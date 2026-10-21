@@ -3,11 +3,16 @@ import {
   type CrawlInfo,
   type CrawlOptionsInput,
   type Engine,
+  type EngineOptions,
 } from '../../src/core/index.js';
 
-/** An engine on an in-memory database. */
-export function createTestEngine(): Engine {
-  return createEngine({ dbPath: ':memory:' });
+/** An engine on an in-memory database, never using a real PSI key. */
+export function createTestEngine(options: EngineOptions = {}): Engine {
+  return createEngine({
+    dbPath: ':memory:',
+    ...options,
+    psi: { apiKey: undefined, ...options.psi },
+  });
 }
 
 /** Crawl a local fixture site with test-friendly defaults and wait for the result. */

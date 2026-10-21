@@ -4,6 +4,7 @@ import { registerAuditCommands } from './commands/audit.js';
 import { registerCrawlCommand } from './commands/crawl.js';
 import { registerCrawlsCommand } from './commands/crawls.js';
 import { registerPageCommands } from './commands/pages.js';
+import { registerSpeedCommands } from './commands/speed.js';
 import { registerSqlCommand } from './commands/sql.js';
 import { CliContext, type GlobalOptions } from './context.js';
 
@@ -40,6 +41,7 @@ export function createProgram(deps: ProgramDeps): Command {
   registerCrawlsCommand(program, getContext);
   registerAuditCommands(program, getContext);
   registerPageCommands(program, getContext);
+  registerSpeedCommands(program, getContext);
   registerSqlCommand(program, getContext);
 
   program

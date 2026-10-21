@@ -1,5 +1,6 @@
 import { THRESHOLDS } from '../config/thresholds.js';
 import type { CrawlOptions } from '../schemas.js';
+import { buildTemplates } from '../speed/templates.js';
 import type { DB } from '../storage/db.js';
 import { CHECKS } from './checks.js';
 import { isIndexable, loadCrawlData } from './data.js';
@@ -79,6 +80,7 @@ export function analyzeCrawl(db: DB, crawlId: string): AnalysisResult {
       crawlId,
     );
   })();
+  buildTemplates(db, crawlId);
 
   return { pages: data.pages.length, issues: issueCount };
 }
