@@ -139,13 +139,17 @@ describe('analysis of the fixture site', () => {
     expect(out.items.find((l) => l.target === p('/missing'))?.targetStatus).toBe(404);
   });
 
-  it('runs read-only SQL', () => {
-    const res = engine.query.run(`SELECT COUNT(*) AS n FROM pages WHERE crawl_id = '${crawlId}'`);
+  it('runs read-only SQL', async () => {
+    const res = await engine.query.run(
+      `SELECT COUNT(*) AS n FROM pages WHERE crawl_id = '${crawlId}'`,
+    );
     expect(res.rows[0]?.n).toBe(summary.totals.pages);
-    expect(() => engine.query.run('DELETE FROM pages')).toThrow(/Only SELECT/);
-    expect(() => engine.query.run('SELECT 1; DELETE FROM pages')).toThrow();
-    expect(() => engine.query.run('WITH x AS (SELECT 1) DELETE FROM pages')).toThrow(/read-only/);
-    expect(engine.query.run('SELECT * FROM pages', 2)).toMatchObject({
+    await expect(engine.query.run('DELETE FROM pages')).rejects.toThrow(/Only SELECT/);
+    await expect(engine.query.run('SELECT 1; DELETE FROM pages')).rejects.toThrow();
+    await expect(engine.query.run('WITH x AS (SELECT 1) DELETE FROM pages')).rejects.toThrow(
+      /read-only/,
+    );
+    expect(await engine.query.run('SELECT * FROM pages', 2)).toMatchObject({
       rowCount: 2,
       truncated: true,
     });

@@ -92,3 +92,14 @@ describe('extractPage', () => {
     expect(withBase.links[0]?.url).toBe('https://cdn.example.com/x/y');
   });
 });
+
+describe('text cleaning', () => {
+  it('drops terminal escape sequences and bidi overrides from crawled text', () => {
+    const page = extractPage(
+      '<title>Evil\u001b[2J\u001b]0;pwned\u0007 title\u202e</title><a href="/x">a\u009bb</a>',
+      'https://example.com/',
+    );
+    expect(page.title).toBe('Evil[2J]0;pwned title');
+    expect(page.links[0]?.anchor).toBe('ab');
+  });
+});

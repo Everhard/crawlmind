@@ -16,13 +16,13 @@ export function registerSqlCommand(program: Command, getContext: () => CliContex
       QUERY_LIMITS.defaultRows,
     )
     .option('--schema', 'print the tables and columns')
-    .action((query: string | undefined, opts: { limit: number; schema?: boolean }) => {
+    .action(async (query: string | undefined, opts: { limit: number; schema?: boolean }) => {
       const ctx = getContext();
       if (opts.schema || !query) {
         ctx.out(QUERY_SCHEMA_HINT);
         return;
       }
-      const result = ctx.engine.query.run(query, opts.limit);
+      const result = await ctx.engine.query.run(query, opts.limit);
       if (ctx.json) return ctx.printJson(result);
       const cell = Math.max(
         12,

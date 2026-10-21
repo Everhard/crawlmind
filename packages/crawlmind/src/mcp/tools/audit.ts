@@ -173,8 +173,8 @@ export function registerAuditTools(server: McpServer, { engine }: ToolContext): 
       outputSchema: QueryOutput,
       annotations: readOnly,
     },
-    safe(({ sql, limit }) => {
-      const result = engine.query.run(sql, limit);
+    safe(async ({ sql, limit }) => {
+      const result = await engine.query.run(sql, limit);
       const preview = result.rows
         .slice(0, 20)
         .map((row) => JSON.stringify(row))

@@ -204,7 +204,7 @@ export class Fetcher {
         return {
           hops,
           final: response,
-          error: `Unfollowable redirect to ${location}`,
+          error: `Unfollowable redirect to ${JSON.stringify(location.slice(0, 200))}`,
           redirectLoop: false,
           tooManyRedirects: false,
         };

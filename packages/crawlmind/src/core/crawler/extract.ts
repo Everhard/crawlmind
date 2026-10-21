@@ -40,8 +40,14 @@ export function countWords(text: string): number {
   return text.match(WORD)?.length ?? 0;
 }
 
+// C0/C1 control characters (except whitespace) and bidi overrides. Crawled text is shown in
+// terminals and reports, so it must not carry escape sequences or direction tricks.
+// eslint-disable-next-line no-control-regex
+const UNSAFE_CHARS = /[\u0000-\u0008\u000b\u000e-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g;
+
+/** Clean text taken from a crawled page: drop unsafe characters, collapse whitespace. */
 export function collapseWhitespace(text: string): string {
-  return text.replace(/\s+/g, ' ').trim();
+  return text.replace(UNSAFE_CHARS, '').replace(/\s+/g, ' ').trim();
 }
 
 /**
