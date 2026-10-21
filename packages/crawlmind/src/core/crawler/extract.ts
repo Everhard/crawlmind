@@ -29,6 +29,10 @@ export interface ExtractedPage {
   links: ExtractedLink[];
   /** MinHash of the DOM skeleton, for template grouping. */
   domSignature: Uint32Array;
+  /** Start of the main content, for page embeddings. */
+  contentExcerpt: string;
+  /** Paragraphs of the main content, for link suggestions. */
+  paragraphs: string[];
 }
 
 const MAIN_SELECTOR = 'main, [role="main"], article';
@@ -84,15 +88,42 @@ function insideContent(el: AnyNode, $: cheerio.CheerioAPI): boolean {
   return $(el).parents(MAIN_SELECTOR).length > 0;
 }
 
-/** Text of the main content: `<main>`/`<article>` if present, otherwise the body minus boilerplate. */
-export function mainContentText($: cheerio.CheerioAPI): string {
+/** A clone of the main content: `<main>`/`<article>` if present, otherwise the body minus boilerplate. */
+function mainContentRoot($: cheerio.CheerioAPI): cheerio.Cheerio<AnyNode> {
   const main = $(MAIN_SELECTOR).first();
   const root = (main.length ? main : $('body')).clone();
   // Headers and footers inside <main>/<article> (titles, bylines) are content.
   root.find(main.length ? NON_CONTENT_SELECTOR : BOILERPLATE_SELECTOR).remove();
+  return root;
+}
+
+function rootText(root: cheerio.Cheerio<AnyNode>): string {
   // Keep block boundaries so words from adjacent elements do not merge.
   root.find('p, div, li, h1, h2, h3, h4, h5, h6, td, th, br, section').after(' ');
   return collapseWhitespace(root.text());
+}
+
+/** Text of the main content. */
+export function mainContentText($: cheerio.CheerioAPI): string {
+  return rootText(mainContentRoot($));
+}
+
+export const PARAGRAPH_LIMITS = { minWords: 12, maxPerPage: 60, maxChars: 1200 } as const;
+
+/** Paragraph-like blocks of the main content, long enough to hold a contextual link. */
+function contentParagraphs($: cheerio.CheerioAPI, root: cheerio.Cheerio<AnyNode>): string[] {
+  const out: string[] = [];
+  root.find('p, li, blockquote, dd').each((_, el) => {
+    if (out.length >= PARAGRAPH_LIMITS.maxPerPage) return false;
+    const node = $(el);
+    // A list item or quote that wraps paragraphs is covered by those paragraphs.
+    if (node.find('p, li').length > 0) return;
+    const text = collapseWhitespace(node.text());
+    if (countWords(text) >= PARAGRAPH_LIMITS.minWords)
+      out.push(text.slice(0, PARAGRAPH_LIMITS.maxChars));
+    return;
+  });
+  return out;
 }
 
 function attr($el: cheerio.Cheerio<Element>, name: string): string | null {
@@ -139,7 +170,9 @@ export function extractPage(html: string, pageUrl: string): ExtractedPage {
     });
   }
 
-  const text = mainContentText($);
+  const root = mainContentRoot($);
+  const paragraphs = contentParagraphs($, root);
+  const text = rootText(root);
   const canonicalHref = $('link[rel~="canonical"][href]').first().attr('href');
   const title = collapseWhitespace($('head > title, title').first().text());
   const robots = $('meta[name="robots" i], meta[name="crawlmindbot" i]')
@@ -164,5 +197,7 @@ export function extractPage(html: string, pageUrl: string): ExtractedPage {
     mixedContent,
     links,
     domSignature: minHash(skeletonPaths($)),
+    contentExcerpt: text.slice(0, 2000),
+    paragraphs,
   };
 }

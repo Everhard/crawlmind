@@ -2,6 +2,8 @@ import { analyzeCrawl } from './analysis/analyze.js';
 import { AuditService } from './analysis/audit.js';
 import { QueryRunner } from './analysis/query.js';
 import { CrawlManager } from './crawl-manager.js';
+import { TransformersEmbedder, type Embedder, type ModelProgress } from './embeddings/embedder.js';
+import { LinkSuggestionService } from './embeddings/suggest.js';
 import { PsiClient, type PsiClientOptions } from './speed/psi.js';
 import { SpeedService } from './speed/service.js';
 import { databasePath } from './paths.js';
@@ -17,6 +19,7 @@ export interface Engine {
   audit: AuditService;
   query: QueryRunner;
   speed: SpeedService;
+  links: LinkSuggestionService;
   close(): Promise<void>;
 }
 
@@ -26,6 +29,10 @@ export interface EngineOptions {
   psi?: PsiClientOptions;
   /** Let measure_templates run for private sites (only useful with a mocked PSI client). */
   allowPrivatePsiTargets?: boolean;
+  /** Embedding model for link suggestions; default: multilingual-e5-small via transformers.js. */
+  embedder?: Embedder;
+  /** Download progress of the default embedding model. */
+  onModelProgress?: ModelProgress;
 }
 
 export function createEngine(options: EngineOptions = {}): Engine {
@@ -38,6 +45,7 @@ export function createEngine(options: EngineOptions = {}): Engine {
   });
   const query = new QueryRunner(dbPath, db);
   const audit = new AuditService(db, crawls);
+  let embedder = options.embedder;
   const psi = new PsiClient({ apiKey: process.env.PSI_API_KEY || undefined, ...options.psi });
   return {
     db,
@@ -47,6 +55,11 @@ export function createEngine(options: EngineOptions = {}): Engine {
     audit,
     query,
     speed: new SpeedService(db, audit, psi, options.allowPrivatePsiTargets),
+    links: new LinkSuggestionService(
+      db,
+      audit,
+      () => (embedder ??= new TransformersEmbedder(undefined, options.onModelProgress)),
+    ),
     async close() {
       await crawls.shutdown();
       query.close();

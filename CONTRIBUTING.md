@@ -22,7 +22,8 @@ npm test
 npm run build
 ```
 
-All four must pass; CI runs them on Node 22 and 24.
+All four must pass; CI runs them on Node 22 and 24. Tests use a fake embedder; to also run the
+real embedding model (downloads about 120 MB once), use `RUN_SLOW=1 npm test`.
 
 ## Layout
 

@@ -68,6 +68,9 @@ crawlmind issues --check links.broken_internal   # every affected URL of one che
 crawlmind page /pricing                      # everything about one URL
 crawlmind links /pricing --content-only      # who links here, from the main content
 crawlmind top --by underlinked               # important pages that need more links
+crawlmind suggest                            # internal links to add (needs the embeddings add-on)
+crawlmind suggest --target /pricing          # links that should point to one page
+crawlmind cannibalization                    # pages competing for the same topic
 crawlmind templates                          # page templates with TTFB per template
 crawlmind speed                              # PageSpeed Insights on template representatives
 crawlmind sql "SELECT url, ttfb_ms FROM pages ORDER BY ttfb_ms DESC LIMIT 10"
@@ -89,21 +92,25 @@ ask your AI client about the result.
 
 ## MCP tools
 
-| Tool                | What it does                                                                 |
-| ------------------- | ---------------------------------------------------------------------------- |
-| `start_crawl`       | Start a background crawl and return its `crawl_id`                           |
-| `get_crawl_status`  | Progress of a crawl; `wait_seconds` waits and streams progress               |
-| `cancel_crawl`      | Stop a running crawl, keeping the pages fetched so far                       |
-| `list_crawls`       | Past and running crawls, filterable by site                                  |
-| `get_summary`       | Key numbers and top issues by severity, with examples and recommendations    |
-| `get_issues`        | Issues filtered by severity; with `check_id`, every affected URL (paginated) |
-| `get_page`          | Everything about one URL: status, redirects, metadata, timings, link metrics |
-| `get_links`         | Inlinks or outlinks of a URL with anchors, `rel` and placement               |
-| `get_top_pages`     | Pages by PageRank, inlinks, depth, TTFB, or `underlinked` important pages    |
-| `get_templates`     | Templates with page counts, TTFB median/p90 and PageSpeed results            |
-| `measure_templates` | Lighthouse (PageSpeed Insights) on 1–2 representatives per template          |
-| `query_data`        | Read-only SQL `SELECT` on the crawl database, row-limited                    |
-| `ping`              | Health check                                                                 |
+| Tool                   | What it does                                                                 |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| `start_crawl`          | Start a background crawl and return its `crawl_id`                           |
+| `get_crawl_status`     | Progress of a crawl; `wait_seconds` waits and streams progress               |
+| `cancel_crawl`         | Stop a running crawl, keeping the pages fetched so far                       |
+| `list_crawls`          | Past and running crawls, filterable by site                                  |
+| `get_summary`          | Key numbers and top issues by severity, with examples and recommendations    |
+| `get_issues`           | Issues filtered by severity; with `check_id`, every affected URL (paginated) |
+| `get_page`             | Everything about one URL: status, redirects, metadata, timings, link metrics |
+| `get_links`            | Inlinks or outlinks of a URL with anchors, `rel` and placement               |
+| `get_top_pages`        | Pages by PageRank, inlinks, depth, TTFB, or `underlinked` important pages    |
+| `get_templates`        | Templates with page counts, TTFB median/p90 and PageSpeed results            |
+| `measure_templates`    | Lighthouse (PageSpeed Insights) on 1–2 representatives per template          |
+| `suggest_links`        | Internal links to add: source page, paragraph and anchor candidates          |
+| `find_cannibalization` | Page pairs that compete for the same topic                                   |
+| `query_data`           | Read-only SQL `SELECT` on the crawl database, row-limited                    |
+| `ping`                 | Health check                                                                 |
+
+Prompts: `internal_linking_plan` turns link suggestions into a table of links to add.
 
 Resources: `crawlmind://checks/{id}` documents each check (why it matters, how to fix), and
 `crawlmind://crawls/{id}/summary` gives the summary of a crawl.
@@ -134,6 +141,55 @@ with links through redirects credited to the final page. Click depth is a breadt
 from the start URL. Internal PageRank uses damping 0.85, spreads the rank of pages without
 outlinks evenly, ignores `nofollow`, and iterates until the total change is below 1e-6;
 scores are shown 0–100 relative to the strongest page.
+
+## Internal link suggestions
+
+Crawlmind embeds every indexable page (title, H1 and the start of the main content) with a
+local model and looks for pages that are about the same topic as a target but do not link to it
+yet. For each pair it returns:
+
+- the **paragraph** of the source page that fits the target best (paragraphs of the main
+  content are embedded separately),
+- **anchor candidates**: phrases from that paragraph that share key words with the target's
+  title and H1, matched by word prefixes so inflected forms count (`беговые кроссовки` for
+  "Лучшие беговые кроссовки"),
+- the similarity and the target's content inlinks and PageRank.
+
+Without a target, the most link-worthy pages come first: rank =
+`similarity × (1 + importance / (1 + content inlinks))`, where importance is the larger of the
+page's relative PageRank and its sitemap priority. Crawlmind never writes the final sentence;
+your AI client does, from this context. No API keys are involved.
+
+**Cannibalization**: pairs of indexable pages whose embeddings are at least 0.92 similar and
+whose title/H1 key words overlap by at least 50%.
+
+### The embeddings add-on
+
+The model runs locally with [transformers.js](https://huggingface.co/docs/transformers.js).
+Its ONNX runtime is several hundred megabytes, so it is an optional peer dependency and
+everything else works without it. To enable link suggestions:
+
+```bash
+npm install -g crawlmind @huggingface/transformers
+# or, without installing:
+npx -p crawlmind -p @huggingface/transformers crawlmind suggest
+```
+
+For MCP clients:
+
+```bash
+claude mcp add crawlmind -- npx -y -p crawlmind-mcp -p @huggingface/transformers crawlmind-mcp
+```
+
+The model is downloaded once (about 120 MB) into `~/.crawlmind/models`. Page vectors are stored
+per crawl; paragraph vectors are computed only for pages that appear in suggestions.
+
+**Model choice.** [`Xenova/multilingual-e5-small`](https://huggingface.co/Xenova/multilingual-e5-small)
+(8-bit quantized, 384 dimensions) covers about 100 languages, which matters for sites that are
+not in English, and is strong at retrieval for its size: it is the smallest of the e5 family
+that clearly beats older multilingual MiniLM models on retrieval benchmarks, while still
+embedding hundreds of pages per minute on a laptop CPU. Its cosine similarities cluster high,
+so the default thresholds (0.82 for suggestions, 0.92 for cannibalization) are tuned for it.
 
 ## Speed by template
 

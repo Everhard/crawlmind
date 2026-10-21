@@ -45,3 +45,22 @@ export function displayUrl(url: string, site?: string): string {
 export function terminalWidth(): number {
   return process.stdout.columns || 100;
 }
+
+/** Word-wrap `text` to `width` columns, at most `maxLines` lines (the last one ends with …). */
+export function wrapText(text: string, width: number, maxLines = 3): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    if (line && line.length + 1 + word.length > width) {
+      lines.push(line);
+      line = word;
+      if (lines.length === maxLines) break;
+    } else {
+      line = line ? `${line} ${word}` : word;
+    }
+  }
+  if (lines.length < maxLines && line) lines.push(line);
+  else if (lines.length === maxLines)
+    lines[maxLines - 1] = `${(lines[maxLines - 1] as string).slice(0, width - 1)}…`;
+  return lines;
+}

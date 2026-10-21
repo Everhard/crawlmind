@@ -1,4 +1,4 @@
-import { createEngine, type Engine } from '../core/index.js';
+import { createEngine, type Engine, type ModelProgress } from '../core/index.js';
 import { createTheme, type Theme } from './ui/theme.js';
 
 export interface GlobalOptions {
@@ -12,6 +12,8 @@ export class CliContext {
   readonly json: boolean;
   readonly theme: Theme;
   private engineInstance: Engine | null = null;
+  /** Set by commands that want to show model download progress. */
+  modelProgress: ModelProgress | null = null;
 
   constructor(options: GlobalOptions) {
     if (options.home) process.env.CRAWLMIND_HOME = options.home;
@@ -23,7 +25,9 @@ export class CliContext {
   }
 
   get engine(): Engine {
-    this.engineInstance ??= createEngine();
+    this.engineInstance ??= createEngine({
+      onModelProgress: (event) => this.modelProgress?.(event),
+    });
     return this.engineInstance;
   }
 

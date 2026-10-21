@@ -3,6 +3,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { VERSION, type Engine } from '../../src/core/index.js';
 import { createServer } from '../../src/mcp/server.js';
+import { HashingEmbedder } from '../helpers/embedder.js';
 import { createTestEngine } from '../helpers/engine.js';
 import { startFixtureSites } from '../helpers/fixture-server.js';
 
@@ -14,7 +15,7 @@ describe('MCP server', () => {
 
   beforeAll(async () => {
     sites = await startFixtureSites();
-    engine = createTestEngine();
+    engine = createTestEngine({ embedder: new HashingEmbedder() });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     client = new Client({ name: 'test', version: '0.0.0' });
     await Promise.all([
@@ -46,6 +47,8 @@ describe('MCP server', () => {
         'query_data',
         'get_templates',
         'measure_templates',
+        'suggest_links',
+        'find_cannibalization',
       ]),
     );
   });
@@ -154,6 +157,24 @@ describe('MCP server', () => {
       .items;
     expect(items.find((t) => t.label === '/blog/*')?.pageCount).toBe(3);
     expect(JSON.stringify(res.content)).toContain('measure_templates');
+  });
+
+  it('suggests links and offers the linking plan prompt', async () => {
+    const res = await client.callTool({
+      name: 'suggest_links',
+      arguments: { crawl_id: crawlId, min_similarity: 0.1, limit: 3 },
+    });
+    expect(res.isError).toBeFalsy();
+    expect((res.structuredContent as { items: unknown[] }).items.length).toBeGreaterThan(0);
+    expect(JSON.stringify(res.content)).toContain('Paragraph:');
+
+    const { prompts } = await client.listPrompts();
+    expect(prompts.map((p) => p.name)).toContain('internal_linking_plan');
+    const prompt = await client.getPrompt({
+      name: 'internal_linking_plan',
+      arguments: { url: 'https://example.com' },
+    });
+    expect(JSON.stringify(prompt.messages)).toContain('suggest_links');
   });
 
   it('serves check docs and crawl summaries as resources', async () => {

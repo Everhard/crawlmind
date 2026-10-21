@@ -43,4 +43,9 @@ All notable changes to this project are documented here. The format follows
   MinHash DOM fingerprint, PageSpeed Insights v5 on template representatives (lab metrics and
   CrUX field data, retries, stored results). MCP tools `get_templates`, `measure_templates`;
   CLI commands `templates`, `speed`.
+- Internal link suggestions and keyword cannibalization from local multilingual embeddings
+  (`Xenova/multilingual-e5-small` via the optional peer `@huggingface/transformers`): source
+  page, best paragraph and anchor candidates per suggestion. MCP tools `suggest_links`,
+  `find_cannibalization` and prompt `internal_linking_plan`; CLI commands `suggest`,
+  `cannibalization`.
 - Build (tsup), lint (ESLint, Prettier), typecheck, tests (Vitest) and CI on Node 22 and 24.

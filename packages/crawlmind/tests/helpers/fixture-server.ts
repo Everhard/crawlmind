@@ -23,7 +23,7 @@ function listen(server: Server, host: string): Promise<string> {
   });
 }
 
-async function serve(
+export async function serve(
   host: string,
   initialRoutes: Record<string, Route>,
   vars: () => Record<string, string>,

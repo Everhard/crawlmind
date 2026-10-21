@@ -159,4 +159,24 @@ export const MIGRATIONS: readonly string[] = [
   );
   CREATE INDEX psi_results_crawl ON psi_results (crawl_id, url, strategy);
   `,
+  // 4: content for link suggestions
+  `
+  ALTER TABLE pages ADD COLUMN content_excerpt TEXT;
+
+  CREATE TABLE paragraphs (
+    id        INTEGER PRIMARY KEY,
+    page_id   INTEGER NOT NULL REFERENCES pages (id) ON DELETE CASCADE,
+    idx       INTEGER NOT NULL,
+    text      TEXT NOT NULL,
+    model     TEXT,
+    embedding BLOB
+  );
+  CREATE INDEX paragraphs_page ON paragraphs (page_id);
+
+  CREATE TABLE page_embeddings (
+    page_id INTEGER PRIMARY KEY REFERENCES pages (id) ON DELETE CASCADE,
+    model   TEXT NOT NULL,
+    vector  BLOB NOT NULL
+  );
+  `,
 ];

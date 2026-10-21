@@ -61,6 +61,15 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@huggingface/transformers": "^4.3.1",
     "@types/better-sqlite3": "^9.6.0"
+  },
+  "peerDependencies": {
+    "@huggingface/transformers": "^4.3.1"
+  },
+  "peerDependenciesMeta": {
+    "@huggingface/transformers": {
+      "optional": true
+    }
   }
 }

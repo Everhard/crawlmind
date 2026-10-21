@@ -129,18 +129,21 @@ export class CrawlStore {
          crawl_id, url, final_url, status, fetch_error, content_type, depth, in_sitemap,
          sitemap_priority, blocked_by_robots, redirect_count, ttfb_ms, download_ms, html_bytes,
          truncated, title, meta_description, h1_json, canonical, meta_robots, x_robots_tag, lang,
-         word_count, content_hash, scripts_count, stylesheets_count, mixed_content_json, dom_signature,
+         word_count, content_hash, scripts_count, stylesheets_count, mixed_content_json, dom_signature, content_excerpt,
          fetched_at
        ) VALUES (
          @crawlId, @url, @finalUrl, @status, @fetchError, @contentType, @depth, @inSitemap,
          @sitemapPriority, @blockedByRobots, @redirectCount, @ttfbMs, @downloadMs, @htmlBytes,
          @truncated, @title, @metaDescription, @h1Json, @canonical, @metaRobots, @xRobotsTag, @lang,
-         @wordCount, @contentHash, @scriptsCount, @stylesheetsCount, @mixedContentJson, @domSignature,
+         @wordCount, @contentHash, @scriptsCount, @stylesheetsCount, @mixedContentJson, @domSignature, @contentExcerpt,
          @fetchedAt
        )`,
     );
     const insertHop = this.db.prepare(
       `INSERT INTO redirect_hops (page_id, hop_index, url, status) VALUES (?, ?, ?, ?)`,
+    );
+    const insertParagraph = this.db.prepare(
+      `INSERT INTO paragraphs (page_id, idx, text) VALUES (?, ?, ?)`,
     );
     const insertLink = this.db.prepare(
       `INSERT INTO links (crawl_id, source_page_id, target_url, anchor, rel, nofollow, is_internal, placement)
@@ -151,6 +154,7 @@ export class CrawlStore {
       const pageId = Number(
         insertPage.run({
           ...page,
+          paragraphs: undefined,
           crawlId,
           inSitemap: b(page.inSitemap),
           blockedByRobots: b(page.blockedByRobots),
@@ -162,6 +166,7 @@ export class CrawlStore {
         }).lastInsertRowid,
       );
       hops.forEach((hop, index) => insertHop.run(pageId, index, hop.url, hop.status));
+      page.paragraphs.forEach((text, index) => insertParagraph.run(pageId, index, text));
       for (const link of links) {
         insertLink.run(
           crawlId,

@@ -68,3 +68,17 @@ export {
 export { groupTemplates, buildTemplates } from './speed/templates.js';
 export { urlPatterns, isVariableSegment } from './speed/url-pattern.js';
 export { minHash, signatureSimilarity, skeletonPaths } from './speed/fingerprint.js';
+export {
+  TransformersEmbedder,
+  DEFAULT_MODEL,
+  type Embedder,
+  type ModelProgress,
+} from './embeddings/embedder.js';
+export {
+  LinkSuggestionService,
+  SUGGEST_DEFAULTS,
+  type LinkSuggestion,
+  type CannibalizationPair,
+  type SuggestOptions,
+} from './embeddings/suggest.js';
+export { anchorCandidates, keyStems } from './embeddings/text.js';
