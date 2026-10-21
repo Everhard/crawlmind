@@ -243,7 +243,10 @@ when the crawls differ much in size, since "removed" pages may just not have bee
 Reports (`export_report`, `crawlmind report`) contain the summary, every issue with up to ten
 examples and its fix, under-linked important pages, speed by template, and the strongest and
 slowest pages. The HTML version is a single file with inline CSS, no scripts, light and dark
-themes, and works on phones. A report never replaces an existing file unless asked to.
+themes, and works on phones. A report never replaces an existing file unless asked to, and
+never writes through a symbolic link. MCP clients write only inside `~/.crawlmind/reports`
+unless the server runs with `CRAWLMIND_ALLOW_REPORT_PATHS=1`, so instructions hidden in a
+crawled page cannot make the AI client overwrite your files.
 
 ## Configuration
 
@@ -253,6 +256,7 @@ themes, and works on phones. A report never replaces an existing file unless ask
 | `PSI_API_KEY`                      | PageSpeed Insights API key                                                |
 | `CRAWLMIND_ALLOW_PRIVATE_NETWORKS` | `1` lets MCP clients crawl private and local addresses                    |
 | `CRAWLMIND_LOG_LEVEL`              | `debug`, `info`, `warn` (default), `error` or `silent`; logs go to stderr |
+| `CRAWLMIND_ALLOW_REPORT_PATHS`     | `1` lets MCP clients write reports outside `~/.crawlmind/reports`         |
 
 ## Crawling rules
 

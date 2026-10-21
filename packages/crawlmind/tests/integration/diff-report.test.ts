@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -110,6 +110,37 @@ describe('crawl diff and reports', () => {
     expect(
       engine.exportReport(second, { format: 'html', path: existing, overwrite: true }).bytes,
     ).toBeGreaterThan(1000);
+  });
+
+  it('refuses symlinks and, when restricted, paths outside the reports directory', () => {
+    const previousHome = process.env.CRAWLMIND_HOME;
+    process.env.CRAWLMIND_HOME = join(dir, 'home');
+    try {
+      const outside = join(dir, 'outside.html');
+      expect(() =>
+        engine.exportReport(second, { format: 'html', path: outside, restrictToReportsDir: true }),
+      ).toThrow(/only write reports inside/);
+
+      const inDefault = engine.exportReport(second, { format: 'html', restrictToReportsDir: true });
+      expect(inDefault.path.startsWith(join(dir, 'home', 'reports'))).toBe(true);
+
+      const victim = join(dir, 'victim.md');
+      writeFileSync(victim, 'keep me');
+      const link = join(dir, 'home', 'reports', 'link.md');
+      symlinkSync(victim, link);
+      expect(() =>
+        engine.exportReport(second, {
+          format: 'markdown',
+          path: link,
+          overwrite: true,
+          restrictToReportsDir: true,
+        }),
+      ).toThrow(/symbolic link/);
+      expect(readFileSync(victim, 'utf8')).toBe('keep me');
+    } finally {
+      if (previousHome === undefined) delete process.env.CRAWLMIND_HOME;
+      else process.env.CRAWLMIND_HOME = previousHome;
+    }
   });
 
   it('refuses to compare different sites', async () => {

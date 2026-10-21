@@ -11,6 +11,7 @@ export async function runMcpServer(): Promise<void> {
   const server = createServer({
     engine,
     allowPrivateNetworks: process.env.CRAWLMIND_ALLOW_PRIVATE_NETWORKS === '1',
+    allowReportPaths: process.env.CRAWLMIND_ALLOW_REPORT_PATHS === '1',
   });
   const transport = new StdioServerTransport();
 

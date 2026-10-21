@@ -28,6 +28,11 @@
           "isRequired": false
         },
         {
+          "name": "CRAWLMIND_ALLOW_REPORT_PATHS",
+          "description": "Set to 1 to let clients write reports outside ~/.crawlmind/reports",
+          "isRequired": false
+        },
+        {
           "name": "CRAWLMIND_ALLOW_PRIVATE_NETWORKS",
           "description": "Set to 1 to let clients crawl private and local addresses",
           "isRequired": false

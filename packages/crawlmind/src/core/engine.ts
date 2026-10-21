@@ -25,7 +25,12 @@ export interface Engine {
   compare(beforeId: string, afterId: string, limit?: number): CrawlDiff;
   exportReport(
     crawlId: string,
-    opts: { format: ReportFormat; path?: string; overwrite?: boolean },
+    opts: {
+      format: ReportFormat;
+      path?: string;
+      overwrite?: boolean;
+      restrictToReportsDir?: boolean;
+    },
   ): ExportResult;
   close(): Promise<void>;
 }

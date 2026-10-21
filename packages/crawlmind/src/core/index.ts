@@ -96,4 +96,4 @@ export {
 export { collectReportData, type ReportData } from './report/data.js';
 export { renderHtmlReport, escapeHtml } from './report/html.js';
 export { renderMarkdownReport, escapeMarkdown } from './report/markdown.js';
-export { exportReport, type ExportResult, type ReportFormat } from './report/export.js';
+export { exportReport, reportsDir, type ExportResult, type ReportFormat } from './report/export.js';

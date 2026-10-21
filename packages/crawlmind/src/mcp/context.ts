@@ -8,4 +8,9 @@ export interface ToolContext {
    * an AI client must not be talked into probing the local network.
    */
   allowPrivateNetworks: boolean;
+  /**
+   * Whether export_report may write outside ~/.crawlmind/reports. Off unless the operator sets
+   * `CRAWLMIND_ALLOW_REPORT_PATHS=1`, so an injected instruction cannot overwrite user files.
+   */
+  allowReportPaths?: boolean;
 }

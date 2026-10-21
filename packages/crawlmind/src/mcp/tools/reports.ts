@@ -63,7 +63,10 @@ export function describeDiff(d: CrawlDiff): string {
   return lines.join('\n').trim() || 'No differences.';
 }
 
-export function registerReportTools(server: McpServer, { engine }: ToolContext): void {
+export function registerReportTools(
+  server: McpServer,
+  { engine, allowReportPaths }: ToolContext,
+): void {
   server.registerTool(
     'compare_crawls',
     {
@@ -100,8 +103,8 @@ export function registerReportTools(server: McpServer, { engine }: ToolContext):
       description:
         'Write a self-contained HTML or Markdown audit report (summary, all issues with examples, ' +
         'under-linked pages, speed by template, strongest and slowest pages) to a file. The path ' +
-        'must end in .html/.md; existing files are kept unless overwrite=true. Without a path the ' +
-        'report goes to ~/.crawlmind/reports.',
+        'must end in .html/.md and lie inside ~/.crawlmind/reports (the default) unless the server ' +
+        'allows other paths; existing files are kept unless overwrite=true.',
       inputSchema: {
         crawl_id: crawlId,
         format: z.enum(['html', 'markdown']).default('html'),
@@ -109,10 +112,15 @@ export function registerReportTools(server: McpServer, { engine }: ToolContext):
         overwrite: z.boolean().default(false),
       },
       outputSchema: { path: z.string(), format: z.enum(['html', 'markdown']), bytes: z.number() },
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     },
     safe(({ crawl_id, format, path, overwrite }) => {
-      const result = engine.exportReport(crawl_id, { format, path, overwrite });
+      const result = engine.exportReport(crawl_id, {
+        format,
+        path,
+        overwrite,
+        restrictToReportsDir: !allowReportPaths,
+      });
       return toolResult(
         result,
         `Wrote ${format} report (${Math.round(result.bytes / 1024)} KB) to ${result.path}`,
