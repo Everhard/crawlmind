@@ -8,7 +8,10 @@ export type { ToolContext } from './context.js';
 /** Start the MCP server over stdio. Resolves once the transport is connected. */
 export async function runMcpServer(): Promise<void> {
   const engine = createEngine();
-  const server = createServer({ engine });
+  const server = createServer({
+    engine,
+    allowPrivateNetworks: process.env.CRAWLMIND_ALLOW_PRIVATE_NETWORKS === '1',
+  });
   const transport = new StdioServerTransport();
 
   let closing = false;

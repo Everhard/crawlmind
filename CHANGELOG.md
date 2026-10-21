@@ -16,7 +16,9 @@ All notable changes to this project are documented here. The format follows
   with full chains and loop detection, 15 s timeouts, 5 MB body cap, gzip/deflate/br/zstd
   decoding, and external link checks (HEAD with GET fallback, per-host limits).
 - SSRF protection: private, loopback and link-local addresses are refused on every connection
-  and redirect hop unless `allowPrivateNetworks` is set.
+  and redirect hop unless `allowPrivateNetworks` is set (IPv4-mapped, NAT64, 6to4 and Teredo
+  forms included). MCP clients can set it only when the server runs with
+  `CRAWLMIND_ALLOW_PRIVATE_NETWORKS=1`. Gzipped sitemaps are size-capped after inflation.
 - Per-page data: status, timings (TTFB, download), title, meta description, H1s, canonical,
   meta robots, `X-Robots-Tag`, `lang`, main-content word count and hash, scripts, stylesheets,
   mixed content; per-link anchor, `rel` and placement (nav, header, footer, main, other).

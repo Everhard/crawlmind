@@ -17,7 +17,7 @@ describe('MCP server', () => {
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     client = new Client({ name: 'test', version: '0.0.0' });
     await Promise.all([
-      createServer({ engine }).connect(serverTransport),
+      createServer({ engine, allowPrivateNetworks: true }).connect(serverTransport),
       client.connect(clientTransport),
     ]);
   });
@@ -90,5 +90,26 @@ describe('MCP server', () => {
       arguments: { url: 'ftp://example.com' },
     });
     expect(bad.isError).toBe(true);
+  });
+});
+
+describe('MCP private network gate', () => {
+  it('refuses allowPrivateNetworks unless the operator enabled it', async () => {
+    const engine = createTestEngine();
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const client = new Client({ name: 'test', version: '0.0.0' });
+    await Promise.all([
+      createServer({ engine, allowPrivateNetworks: false }).connect(serverTransport),
+      client.connect(clientTransport),
+    ]);
+    const res = await client.callTool({
+      name: 'start_crawl',
+      arguments: { url: 'http://127.0.0.1:9/', allowPrivateNetworks: true },
+    });
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res.content)).toMatch(/CRAWLMIND_ALLOW_PRIVATE_NETWORKS/);
+    expect(engine.store.listCrawls({ limit: 1, offset: 0 }).total).toBe(0);
+    await client.close();
+    await engine.close();
   });
 });

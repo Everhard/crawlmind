@@ -38,7 +38,9 @@ export function parseSitemap(xml: string, baseUrl: string): ParsedSitemap {
 
 function bodyToXml(body: Buffer, contentType: string | undefined): string {
   const gzipped = body[0] === 0x1f && body[1] === 0x8b;
-  return decodeHtml(gzipped ? gunzipSync(body) : body, contentType);
+  // Cap the inflated size too, so a small compressed file cannot exhaust memory.
+  const xml = gzipped ? gunzipSync(body, { maxOutputLength: CRAWL_LIMITS.maxBodyBytes }) : body;
+  return decodeHtml(xml, contentType);
 }
 
 /**

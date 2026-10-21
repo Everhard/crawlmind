@@ -95,8 +95,10 @@ ask your AI client about the result.
 - Only `text/html` is parsed. Sitemaps (from robots.txt and `/sitemap.xml`, indexes and gzip
   included) add URLs that links do not reach.
 - Refuses private, loopback and link-local addresses, checked on every connection and redirect
-  hop (DNS rebinding included). Pass `allowPrivateNetworks` / `--allow-private` for intranet
-  or local sites.
+  hop (DNS rebinding included). For intranet or local sites use `--allow-private` in the CLI.
+  MCP clients may only set `allowPrivateNetworks` when the server runs with
+  `CRAWLMIND_ALLOW_PRIVATE_NETWORKS=1`, so a prompt injection on a crawled page cannot turn the
+  AI client into a local network scanner.
 
 ## Privacy
 

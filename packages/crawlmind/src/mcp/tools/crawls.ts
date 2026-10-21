@@ -9,7 +9,7 @@ import {
 import type { ToolContext } from '../context.js';
 import { describeCrawl, describeStatus } from '../format.js';
 import { crawlProgressNotifier } from '../progress.js';
-import { safe, toolResult } from '../result.js';
+import { safe, toolError, toolResult } from '../result.js';
 
 const crawlId = z.string().min(1).describe('Crawl id returned by start_crawl or list_crawls');
 
@@ -21,7 +21,10 @@ const statusOutput = {
 /** Upper bound for `start_crawl` with `wait: true`. */
 const MAX_START_WAIT_MS = 30 * 60 * 1000;
 
-export function registerCrawlTools(server: McpServer, { engine }: ToolContext): void {
+export function registerCrawlTools(
+  server: McpServer,
+  { engine, allowPrivateNetworks }: ToolContext,
+): void {
   server.registerTool(
     'start_crawl',
     {
@@ -41,6 +44,13 @@ export function registerCrawlTools(server: McpServer, { engine }: ToolContext): 
       annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: false },
     },
     safe(async ({ wait, ...options }, extra) => {
+      if (options.allowPrivateNetworks && !allowPrivateNetworks) {
+        return toolError(
+          'Crawling private or local network addresses is disabled for MCP clients. ' +
+            'The person running the server can enable it with the environment variable ' +
+            'CRAWLMIND_ALLOW_PRIVATE_NETWORKS=1, or crawl from the CLI with --allow-private.',
+        );
+      }
       const crawl = engine.crawls.start(options);
       if (!wait) {
         const report = engine.crawls.status(crawl.crawlId);

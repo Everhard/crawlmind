@@ -7,45 +7,91 @@ import { CrawlmindError } from '../errors.js';
  * IP check happens on the address actually used, for every redirect hop, which also defeats
  * DNS rebinding.
  */
-const blocked = new BlockList();
-// IPv4
-blocked.addSubnet('0.0.0.0', 8, 'ipv4'); // "this" network
-blocked.addSubnet('10.0.0.0', 8, 'ipv4'); // private
-blocked.addSubnet('100.64.0.0', 10, 'ipv4'); // carrier-grade NAT
-blocked.addSubnet('127.0.0.0', 8, 'ipv4'); // loopback
-blocked.addSubnet('169.254.0.0', 16, 'ipv4'); // link-local (incl. cloud metadata)
-blocked.addSubnet('172.16.0.0', 12, 'ipv4'); // private
-blocked.addSubnet('192.0.0.0', 24, 'ipv4'); // IETF protocol assignments
-blocked.addSubnet('192.168.0.0', 16, 'ipv4'); // private
-blocked.addSubnet('198.18.0.0', 15, 'ipv4'); // benchmarking
-blocked.addSubnet('224.0.0.0', 4, 'ipv4'); // multicast
-blocked.addSubnet('240.0.0.0', 4, 'ipv4'); // reserved + broadcast
-// IPv6
-blocked.addAddress('::', 'ipv6'); // unspecified
-blocked.addAddress('::1', 'ipv6'); // loopback
-blocked.addSubnet('fc00::', 7, 'ipv6'); // unique local
-blocked.addSubnet('fe80::', 10, 'ipv6'); // link-local
-blocked.addSubnet('ff00::', 8, 'ipv6'); // multicast
-blocked.addSubnet('64:ff9b:1::', 48, 'ipv6'); // local-use NAT64
+const blockedV4 = new BlockList();
+blockedV4.addSubnet('0.0.0.0', 8, 'ipv4'); // "this" network
+blockedV4.addSubnet('10.0.0.0', 8, 'ipv4'); // private
+blockedV4.addSubnet('100.64.0.0', 10, 'ipv4'); // carrier-grade NAT
+blockedV4.addSubnet('127.0.0.0', 8, 'ipv4'); // loopback
+blockedV4.addSubnet('169.254.0.0', 16, 'ipv4'); // link-local (incl. cloud metadata)
+blockedV4.addSubnet('172.16.0.0', 12, 'ipv4'); // private
+blockedV4.addSubnet('192.0.0.0', 24, 'ipv4'); // IETF protocol assignments
+blockedV4.addSubnet('192.168.0.0', 16, 'ipv4'); // private
+blockedV4.addSubnet('198.18.0.0', 15, 'ipv4'); // benchmarking
+blockedV4.addSubnet('224.0.0.0', 4, 'ipv4'); // multicast
+blockedV4.addSubnet('240.0.0.0', 4, 'ipv4'); // reserved + broadcast
+
+const blockedV6 = new BlockList();
+blockedV6.addSubnet('::', 128, 'ipv6'); // unspecified
+blockedV6.addSubnet('::1', 128, 'ipv6'); // loopback
+blockedV6.addSubnet('fc00::', 7, 'ipv6'); // unique local
+blockedV6.addSubnet('fe80::', 10, 'ipv6'); // link-local
+blockedV6.addSubnet('fec0::', 10, 'ipv6'); // deprecated site-local
+blockedV6.addSubnet('ff00::', 8, 'ipv6'); // multicast
+blockedV6.addSubnet('2001::', 32, 'ipv6'); // Teredo (embeds an obfuscated IPv4)
+blockedV6.addSubnet('2001:db8::', 32, 'ipv6'); // documentation
+
+/** Expand an IPv6 address (any notation, incl. embedded dotted IPv4) to 8 16-bit groups. */
+export function ipv6Groups(ip: string): number[] | null {
+  let text = ip.toLowerCase().split('%')[0] ?? '';
+  const dotted = /(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(text);
+  if (dotted) {
+    const [a, b, c, d] = dotted.slice(1).map(Number) as [number, number, number, number];
+    text = `${text.slice(0, dotted.index)}${((a << 8) | b).toString(16)}:${((c << 8) | d).toString(16)}`;
+  }
+  const halves = text.split('::');
+  if (halves.length > 2) return null;
+  const head = halves[0] ? halves[0].split(':') : [];
+  const tail = halves.length === 2 && halves[1] ? halves[1].split(':') : [];
+  const missing = 8 - head.length - tail.length;
+  if (halves.length === 1 ? missing !== 0 : missing < 1) return null;
+  const groups = [
+    ...head,
+    ...Array<string>(halves.length === 2 ? missing : 0).fill('0'),
+    ...tail,
+  ].map((g) => Number.parseInt(g, 16));
+  return groups.length === 8 && groups.every((g) => g >= 0 && g <= 0xffff) ? groups : null;
+}
+
+function v4FromGroups(hi: number, lo: number): string {
+  return `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
+}
+
+/**
+ * IPv4 addresses embedded in an IPv6 address by common transition mechanisms: IPv4-mapped
+ * and -compatible (::ffff:0:0/96, ::/96), NAT64 (64:ff9b::/96, 64:ff9b:1::/48) and 6to4 (2002::/16).
+ */
+function embeddedIPv4(g: number[]): string | null {
+  const [g0, g1, g2, g3, g4, g5, g6, g7] = g as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
+  const zeroPrefix = g0 === 0 && g1 === 0 && g2 === 0 && g3 === 0 && g4 === 0;
+  if (zeroPrefix && (g5 === 0xffff || g5 === 0)) return v4FromGroups(g6, g7);
+  if (g0 === 0x64 && g1 === 0xff9b && g2 === 0 && g3 === 0 && g4 === 0 && g5 === 0)
+    return v4FromGroups(g6, g7);
+  if (g0 === 0x64 && g1 === 0xff9b && g2 === 1) return v4FromGroups(g6, g7);
+  if (g0 === 0x2002) return v4FromGroups(g1, g2);
+  return null;
+}
 
 /** True if `ip` is loopback, private, link-local or otherwise not publicly routable. */
 export function isPrivateAddress(ip: string): boolean {
   const family = isIP(ip);
-  if (family === 4) return blocked.check(ip, 'ipv4');
-  if (family === 6) {
-    const lower = ip.toLowerCase();
-    // IPv4-mapped (::ffff:a.b.c.d) and IPv4-compatible forms hide an IPv4 address.
-    const mapped = /^(?:::ffff:|::)(\d+\.\d+\.\d+\.\d+)$/.exec(lower);
-    if (mapped?.[1]) return blocked.check(mapped[1], 'ipv4');
-    const hexMapped = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(lower);
-    if (hexMapped?.[1] && hexMapped[2]) {
-      const hi = parseInt(hexMapped[1], 16);
-      const lo = parseInt(hexMapped[2], 16);
-      return blocked.check(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`, 'ipv4');
-    }
-    return blocked.check(lower, 'ipv6');
-  }
-  return false;
+  if (family === 4) return blockedV4.check(ip, 'ipv4');
+  if (family !== 6) return false;
+  const groups = ipv6Groups(ip);
+  if (!groups) return true; // unparseable: refuse rather than guess
+  const v4 = embeddedIPv4(groups);
+  // ::/96 with a zero IPv4 part is `::` or `::1`, handled by the IPv6 list.
+  if (v4 && v4 !== '0.0.0.0' && v4 !== '0.0.0.1') return blockedV4.check(v4, 'ipv4');
+  const canonical = groups.map((g) => g.toString(16)).join(':');
+  return blockedV6.check(canonical, 'ipv6');
 }
 
 export function blockedAddressError(host: string, ip?: string): CrawlmindError {
