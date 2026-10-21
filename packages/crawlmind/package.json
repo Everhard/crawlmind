@@ -1,0 +1,56 @@
+{
+  "name": "crawlmind",
+  "version": "0.1.0",
+  "description": "AI-native SEO audits from the terminal or any MCP client: broken links, internal link suggestions, page speed by template, crawl diffs.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Andrew Dorokhov <andrew@dorokhov.dev>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Everhard/crawlmind.git",
+    "directory": "packages/crawlmind"
+  },
+  "homepage": "https://github.com/Everhard/crawlmind#readme",
+  "bugs": "https://github.com/Everhard/crawlmind/issues",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "seo",
+    "crawler",
+    "internal-links",
+    "broken-links",
+    "page-speed",
+    "cli"
+  ],
+  "bin": {
+    "crawlmind": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    },
+    "./mcp": {
+      "types": "./dist/mcp/index.d.ts",
+      "import": "./dist/mcp/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepack": "node ../../scripts/copy-readme.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "commander": "^15.0.0",
+    "picocolors": "^1.1.1",
+    "zod": "^4.6.7"
+  }
+}

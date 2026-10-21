@@ -1,0 +1,41 @@
+{
+  "name": "crawlmind-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for AI-native SEO audits. Shortcut for `crawlmind mcp`.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Andrew Dorokhov <andrew@dorokhov.dev>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Everhard/crawlmind.git",
+    "directory": "packages/crawlmind-mcp"
+  },
+  "homepage": "https://github.com/Everhard/crawlmind#readme",
+  "mcpName": "io.github.everhard/crawlmind",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "seo",
+    "crawler",
+    "internal-links",
+    "broken-links",
+    "page-speed"
+  ],
+  "bin": {
+    "crawlmind-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prepack": "node -e \"require('fs').copyFileSync('../../LICENSE','LICENSE')\""
+  },
+  "dependencies": {
+    "crawlmind": "0.1.0"
+  }
+}
