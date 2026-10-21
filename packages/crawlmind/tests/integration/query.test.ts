@@ -27,7 +27,7 @@ describe('QueryRunner on a database file', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('returns rows from a worker', async () => {
+  it('returns rows from a separate process', async () => {
     const result = await runner.run('SELECT id, site FROM crawls');
     expect(result).toEqual({
       columns: ['id', 'site'],
@@ -45,6 +45,13 @@ describe('QueryRunner on a database file', () => {
       ),
     ).rejects.toThrow(/stopped after/);
     expect(Date.now() - started).toBeLessThan(3000);
+    // The runner is still usable afterwards.
+    expect((await runner.run('SELECT 1 AS one')).rows).toEqual([{ one: 1 }]);
+  });
+
+  it('runs queries one at a time', async () => {
+    const results = await Promise.all([1, 2, 3].map((n) => runner.run(`SELECT ${n} AS n`)));
+    expect(results.map((r) => r.rows[0]?.n)).toEqual([1, 2, 3]);
   });
 
   it('caps long values', async () => {

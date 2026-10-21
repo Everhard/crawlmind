@@ -1,12 +1,12 @@
 import { createRequire } from 'node:module';
-import { Worker } from 'node:worker_threads';
+import { spawn } from 'node:child_process';
 import { CrawlmindError } from '../errors.js';
 import { openReadonlyDatabase, type DB } from '../storage/db.js';
 
 export const QUERY_LIMITS = {
   defaultRows: 100,
   maxRows: 1000,
-  /** Wall-clock limit; the worker running the query is terminated after it. */
+  /** Wall-clock limit; the process running the query is killed after it. */
   timeoutMs: 10_000,
   /** Longest string value returned; longer values are cut. */
   maxValueChars: 2000,
@@ -36,7 +36,7 @@ export const QUERY_SCHEMA_HINT = [
 ].join('\n');
 
 /**
- * Executes the statement and collects capped rows. Runs inside a worker thread (as source
+ * Executes the statement and collects capped rows. Runs inside a child process (as source
  * text, so it needs no separate bundle entry) or inline for in-memory databases.
  */
 const COLLECT = `
@@ -59,18 +59,24 @@ function collect(stmt, cap, maxValueChars, maxResultChars) {
 }
 `;
 
-const WORKER_SOURCE = `
-const { parentPort, workerData } = require('node:worker_threads');
-const Database = require(workerData.driver);
+const CHILD_SOURCE = `
+const Database = require(process.env.CRAWLMIND_SQLITE_DRIVER);
 ${COLLECT}
-try {
-  const db = new Database(workerData.path, { readonly: true, fileMustExist: true });
-  db.pragma('query_only = ON');
-  const stmt = db.prepare(workerData.sql);
-  parentPort.postMessage({ ok: true, result: collect(stmt, workerData.cap, workerData.maxValueChars, workerData.maxResultChars) });
-} catch (error) {
-  parentPort.postMessage({ ok: false, message: String(error && error.message ? error.message : error) });
-}
+let input = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => { input += chunk; });
+process.stdin.on('end', () => {
+  let out;
+  try {
+    const job = JSON.parse(input);
+    const db = new Database(job.path, { readonly: true, fileMustExist: true });
+    db.pragma('query_only = ON');
+    out = { ok: true, result: collect(db.prepare(job.sql), job.cap, job.maxValueChars, job.maxResultChars) };
+  } catch (error) {
+    out = { ok: false, message: String(error && error.message ? error.message : error) };
+  }
+  process.stdout.write(JSON.stringify(out));
+});
 `;
 
 type Collected = Omit<QueryResult, 'rowCount'>;
@@ -83,11 +89,14 @@ const collectInline = new Function(`${COLLECT}; return collect;`)() as (
 
 /**
  * Runs user-supplied SELECT statements read-only: validated on a read-only connection, then
- * executed in a worker thread with its own read-only connection and a wall-clock timeout, so
- * a runaway query cannot block the server. Rows and values are capped.
+ * executed in a child process with its own read-only connection. The process is killed after
+ * a wall-clock timeout (a busy SQLite step cannot be interrupted from JavaScript), and only
+ * one query runs at a time. Rows and values are capped.
  */
 export class QueryRunner {
   private readonlyDb: DB | null = null;
+  /** Serializes queries: at most one child process at a time. */
+  private queue: Promise<unknown> = Promise.resolve();
   private readonly driverPath = createRequire(import.meta.url).resolve('better-sqlite3');
 
   constructor(
@@ -143,47 +152,68 @@ export class QueryRunner {
         throw new CrawlmindError('invalid_input', `SQL error: ${(error as Error).message}`);
       }
     } else {
-      collected = await this.runInWorker(text, cap);
+      const run = this.queue.then(() => this.runInChild(text, cap));
+      this.queue = run.catch(() => undefined);
+      collected = await run;
     }
     return { ...collected, rowCount: collected.rows.length };
   }
 
-  private runInWorker(sql: string, cap: number): Promise<Collected> {
+  private runInChild(sql: string, cap: number): Promise<Collected> {
     return new Promise((resolve, reject) => {
-      const worker = new Worker(WORKER_SOURCE, {
-        eval: true,
-        workerData: {
-          driver: this.driverPath,
+      const child = spawn(process.execPath, ['-e', CHILD_SOURCE], {
+        env: { ...process.env, CRAWLMIND_SQLITE_DRIVER: this.driverPath },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      let stdout = '';
+      let stderr = '';
+      let timedOut = false;
+      child.stdout.setEncoding('utf8').on('data', (chunk: string) => (stdout += chunk));
+      child.stderr.setEncoding('utf8').on('data', (chunk: string) => (stderr += chunk));
+      const timer = setTimeout(() => {
+        timedOut = true;
+        child.kill('SIGKILL');
+      }, this.timeoutMs);
+
+      child.once('error', (error) => {
+        clearTimeout(timer);
+        reject(
+          new CrawlmindError('internal', `Could not start the query process: ${error.message}`),
+        );
+      });
+      child.once('close', () => {
+        clearTimeout(timer);
+        if (timedOut) {
+          reject(
+            new CrawlmindError(
+              'invalid_input',
+              `Query stopped after ${this.timeoutMs / 1000} s.`,
+              'Filter by crawl_id, add a LIMIT, or avoid recursive queries.',
+            ),
+          );
+          return;
+        }
+        let msg: { ok: true; result: Collected } | { ok: false; message: string };
+        try {
+          msg = JSON.parse(stdout);
+        } catch {
+          reject(
+            new CrawlmindError('internal', `Query process failed: ${stderr.trim() || 'no output'}`),
+          );
+          return;
+        }
+        if (msg.ok) resolve(msg.result);
+        else reject(new CrawlmindError('invalid_input', `SQL error: ${msg.message}`));
+      });
+      child.stdin.end(
+        JSON.stringify({
           path: this.dbPath,
           sql,
           cap,
           maxValueChars: QUERY_LIMITS.maxValueChars,
           maxResultChars: QUERY_LIMITS.maxResultChars,
-        },
-      });
-      const timer = setTimeout(() => {
-        void worker.terminate();
-        reject(
-          new CrawlmindError(
-            'invalid_input',
-            `Query stopped after ${this.timeoutMs / 1000} s.`,
-            'Filter by crawl_id, add a LIMIT, or avoid recursive queries.',
-          ),
-        );
-      }, this.timeoutMs);
-      worker.once(
-        'message',
-        (msg: { ok: true; result: Collected } | { ok: false; message: string }) => {
-          clearTimeout(timer);
-          void worker.terminate();
-          if (msg.ok) resolve(msg.result);
-          else reject(new CrawlmindError('invalid_input', `SQL error: ${msg.message}`));
-        },
+        }),
       );
-      worker.once('error', (error) => {
-        clearTimeout(timer);
-        reject(new CrawlmindError('internal', `Query worker failed: ${error.message}`));
-      });
     });
   }
 
