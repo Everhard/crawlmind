@@ -49,6 +49,8 @@ describe('MCP server', () => {
         'measure_templates',
         'suggest_links',
         'find_cannibalization',
+        'compare_crawls',
+        'export_report',
       ]),
     );
   });
@@ -169,7 +171,9 @@ describe('MCP server', () => {
     expect(JSON.stringify(res.content)).toContain('Paragraph:');
 
     const { prompts } = await client.listPrompts();
-    expect(prompts.map((p) => p.name)).toContain('internal_linking_plan');
+    expect(prompts.map((p) => p.name)).toEqual(
+      expect.arrayContaining(['internal_linking_plan', 'seo_audit']),
+    );
     const prompt = await client.getPrompt({
       name: 'internal_linking_plan',
       arguments: { url: 'https://example.com' },

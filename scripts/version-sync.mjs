@@ -1,5 +1,5 @@
 // Usage: npm run version:sync -- 0.2.0
-// Sets the same version on both packages and pins crawlmind-mcp to it.
+// Sets the same version on both packages and server.json, and pins crawlmind-mcp to it.
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const version = process.argv[2];
@@ -15,4 +15,12 @@ for (const name of ['crawlmind', 'crawlmind-mcp']) {
   if (pkg.dependencies?.crawlmind) pkg.dependencies.crawlmind = version;
   writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
 }
-console.log(`Both packages set to ${version}. Run npm install to refresh the lockfile.`);
+const serverFile = new URL('../server.json', import.meta.url);
+const server = JSON.parse(readFileSync(serverFile, 'utf8'));
+server.version = version;
+for (const pkg of server.packages ?? []) pkg.version = version;
+writeFileSync(serverFile, `${JSON.stringify(server, null, 2)}\n`);
+
+console.log(
+  `Both packages and server.json set to ${version}. Run npm install to refresh the lockfile.`,
+);

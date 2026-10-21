@@ -82,3 +82,18 @@ export {
   type SuggestOptions,
 } from './embeddings/suggest.js';
 export { anchorCandidates, keyStems } from './embeddings/text.js';
+export {
+  compareCrawls,
+  type CrawlDiff,
+  type DiffList,
+  type StatusChange,
+  type BrokenLinkChange,
+  type InlinkChange,
+  type TtfbChange,
+  type FieldChange,
+  type IssueCountChange,
+} from './diff/compare.js';
+export { collectReportData, type ReportData } from './report/data.js';
+export { renderHtmlReport, escapeHtml } from './report/html.js';
+export { renderMarkdownReport, escapeMarkdown } from './report/markdown.js';
+export { exportReport, type ExportResult, type ReportFormat } from './report/export.js';

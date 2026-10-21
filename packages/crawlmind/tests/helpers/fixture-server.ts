@@ -50,7 +50,10 @@ export async function serve(
     let body =
       route.body ?? (route.file ? readFileSync(new URL(route.file, PAGES_DIR), 'utf8') : '');
     for (const [key, value] of Object.entries(vars())) body = body.replaceAll(`{{${key}}}`, value);
-    res.writeHead(route.status ?? 200, headers).end(req.method === 'HEAD' ? undefined : body);
+    const send = () =>
+      res.writeHead(route.status ?? 200, headers).end(req.method === 'HEAD' ? undefined : body);
+    if (route.delayMs) setTimeout(send, route.delayMs);
+    else send();
   });
   const origin = await listen(server, host);
   return {

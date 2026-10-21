@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.everhard/crawlmind",
+  "title": "Crawlmind",
+  "description": "SEO audits: broken links, internal link suggestions, speed by template, crawl diffs.",
+  "version": "0.1.0",
+  "websiteUrl": "https://github.com/Everhard/crawlmind",
+  "repository": {
+    "url": "https://github.com/Everhard/crawlmind",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "crawlmind-mcp",
+      "version": "0.1.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "PSI_API_KEY",
+          "description": "PageSpeed Insights API key for measure_templates (optional)",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "CRAWLMIND_HOME",
+          "description": "Data directory (default ~/.crawlmind)",
+          "isRequired": false
+        },
+        {
+          "name": "CRAWLMIND_ALLOW_PRIVATE_NETWORKS",
+          "description": "Set to 1 to let clients crawl private and local addresses",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

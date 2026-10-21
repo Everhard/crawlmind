@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.0] - Unreleased
 
 ### Added
 
@@ -48,4 +48,10 @@ All notable changes to this project are documented here. The format follows
   page, best paragraph and anchor candidates per suggestion. MCP tools `suggest_links`,
   `find_cannibalization` and prompt `internal_linking_plan`; CLI commands `suggest`,
   `cannibalization`.
+- Crawl diffs: new and fixed errors and broken links, pages added and removed, inlink changes,
+  TTFB regressions, title and canonical changes, issue count changes. MCP tool
+  `compare_crawls`, CLI `diff`.
+- Reports: self-contained HTML (inline CSS, light/dark, mobile) and Markdown. MCP tool
+  `export_report`, CLI `report`; existing files are never overwritten by default.
+- MCP prompt `seo_audit`; `server.json` for the MCP Registry.
 - Build (tsup), lint (ESLint, Prettier), typecheck, tests (Vitest) and CI on Node 22 and 24.

@@ -7,6 +7,31 @@ const user = (text: string) => ({
 
 export function registerPrompts(server: McpServer): void {
   server.registerPrompt(
+    'seo_audit',
+    {
+      title: 'SEO audit',
+      description:
+        'Full technical SEO audit of a site with Crawlmind, ending in a prioritized fix list.',
+      argsSchema: {
+        url: z.string().describe('Site to audit, e.g. https://example.com'),
+        max_pages: z.string().optional().describe('Crawl size, default 500'),
+      },
+    },
+    ({ url, max_pages }) =>
+      user(
+        [
+          `Run a technical SEO audit of ${url} with the Crawlmind tools.`,
+          `1. start_crawl with url=${url}${max_pages ? ` and maxPages=${max_pages}` : ''}; then call get_crawl_status with wait_seconds=60 until it is completed.`,
+          '2. get_summary. For every critical issue and the largest warnings, call get_issues with check_id to see all affected URLs, and read crawlmind://checks/<id> when the fix is unclear.',
+          '3. get_top_pages with by=underlinked, and get_templates for speed per template. If templates look slow, call measure_templates for the largest ones.',
+          '4. If list_crawls shows an earlier crawl of this site, compare_crawls to report regressions.',
+          '5. Write the result: a short verdict, then the top 10 fixes ordered by impact, each with the affected URLs (or the template), why it matters and the concrete change. Group fixes that share a template, menu or footer, since one change fixes all of those pages.',
+          '6. Offer to export_report the full HTML report.',
+        ].join('\n'),
+      ),
+  );
+
+  server.registerPrompt(
     'internal_linking_plan',
     {
       title: 'Internal linking plan',

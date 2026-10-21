@@ -447,7 +447,8 @@ export class AuditService {
       },
       ttfb: { where: 'AND p.ttfb_ms IS NOT NULL', order: 'p.ttfb_ms DESC' },
       underlinked: {
-        where: `AND m.indexable = 1 AND m.main_inlinks < 3 AND (
+        // The start page is linked from every page's navigation; it is never under-linked.
+        where: `AND m.indexable = 1 AND m.main_inlinks < 3 AND COALESCE(m.click_depth, -1) != 0 AND (
           COALESCE(p.sitemap_priority, 0) >= 0.8 OR m.pagerank >= (
             SELECT pagerank FROM page_metrics WHERE crawl_id = @crawlId AND pagerank IS NOT NULL
             ORDER BY pagerank DESC LIMIT 1 OFFSET (

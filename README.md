@@ -10,9 +10,6 @@ two crawls.
 [![MCP](https://img.shields.io/badge/MCP-server-blue)](https://modelcontextprotocol.io)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-> **Status:** early development (v0.1 in progress). The feature list below is the v0.1 goal;
-> see [CHANGELOG.md](CHANGELOG.md) for what already works.
-
 ## What makes it different
 
 1. **Internal link suggestions.** Local multilingual embeddings find pages that are about the same
@@ -50,6 +47,16 @@ Claude Desktop, Cursor and other clients (JSON config):
 ```
 
 `crawlmind-mcp` is a shortcut for `crawlmind mcp`; both start the same server over stdio.
+For internal link suggestions, add the embeddings add-on (see
+[below](#the-embeddings-add-on)).
+
+Then ask your AI client:
+
+- "Audit https://example.com and give me the top 10 fixes."
+- "Which internal links should I add to my blog?"
+- "Which templates on my shop are slow on mobile?"
+- "Crawl the site again and tell me what broke since last week."
+- "Export an HTML report of the last crawl to ~/Desktop/audit.html."
 
 ### As a CLI
 
@@ -73,6 +80,8 @@ crawlmind suggest --target /pricing          # links that should point to one pa
 crawlmind cannibalization                    # pages competing for the same topic
 crawlmind templates                          # page templates with TTFB per template
 crawlmind speed                              # PageSpeed Insights on template representatives
+crawlmind diff                               # what changed between the two latest crawls
+crawlmind report -o audit.html               # self-contained HTML report (or -f md)
 crawlmind sql "SELECT url, ttfb_ms FROM pages ORDER BY ttfb_ms DESC LIMIT 10"
 crawlmind crawls                             # past crawls
 ```
@@ -107,10 +116,13 @@ ask your AI client about the result.
 | `measure_templates`    | Lighthouse (PageSpeed Insights) on 1–2 representatives per template          |
 | `suggest_links`        | Internal links to add: source page, paragraph and anchor candidates          |
 | `find_cannibalization` | Page pairs that compete for the same topic                                   |
+| `compare_crawls`       | Diff two crawls: new and fixed errors, lost inlinks, TTFB regressions        |
+| `export_report`        | Write a self-contained HTML or Markdown report to a file                     |
 | `query_data`           | Read-only SQL `SELECT` on the crawl database, row-limited                    |
 | `ping`                 | Health check                                                                 |
 
-Prompts: `internal_linking_plan` turns link suggestions into a table of links to add.
+Prompts: `seo_audit` runs the full audit workflow and ends with a prioritized fix list;
+`internal_linking_plan` turns link suggestions into a table of links to add.
 
 Resources: `crawlmind://checks/{id}` documents each check (why it matters, how to fix), and
 `crawlmind://crawls/{id}/summary` gives the summary of a crawl.
@@ -220,6 +232,19 @@ page weight and CrUX field data when Google has it) are stored per crawl and reu
 often exhausted; a [free API key](https://developers.google.com/speed/docs/insights/v5/get-started)
 raises it.
 
+## Crawl diffs and reports
+
+Crawls are kept, so any two crawls of a site can be compared (`compare_crawls`,
+`crawlmind diff`): new and fixed 4xx/5xx pages, new and fixed broken links, pages added and
+removed, the pages that gained or lost the most inlinks, TTFB regressions (at least 200 ms and
+50% slower), title and canonical changes, and how each issue count moved. A warning is added
+when the crawls differ much in size, since "removed" pages may just not have been reached.
+
+Reports (`export_report`, `crawlmind report`) contain the summary, every issue with up to ten
+examples and its fix, under-linked important pages, speed by template, and the strongest and
+slowest pages. The HTML version is a single file with inline CSS, no scripts, light and dark
+themes, and works on phones. A report never replaces an existing file unless asked to.
+
 ## Configuration
 
 | Variable                           | Purpose                                                                   |
@@ -243,10 +268,18 @@ raises it.
   `CRAWLMIND_ALLOW_PRIVATE_NETWORKS=1`, so a prompt injection on a crawled page cannot turn the
   AI client into a local network scanner.
 
+## Limits
+
+- No JavaScript rendering: pages are analyzed as the server sends them. Sites that build their
+  content in the browser show up nearly empty.
+- One site per crawl (optionally with subdomains), up to 10,000 pages.
+- Crawlmind only reads. No tool changes the audited site.
+
 ## Privacy
 
 Everything stays on your machine, in `~/.crawlmind` (override with `CRAWLMIND_HOME`). Crawlmind
-contacts only the site you crawl and, when you ask for it, the PageSpeed Insights API. No
+contacts only the site you crawl, the PageSpeed Insights API when you measure templates, and
+Hugging Face once to download the embedding model when you first use link suggestions. No
 telemetry.
 
 ## Development
@@ -262,6 +295,10 @@ Try the MCP server in the official inspector:
 ```bash
 npx @modelcontextprotocol/inspector node packages/crawlmind/dist/cli.js mcp
 ```
+
+Layout: `packages/crawlmind/src/core` is the engine (crawler, storage, analysis, speed,
+embeddings, report, diff) and never imports the MCP SDK or CLI libraries; `src/mcp` and
+`src/cli` are thin layers over it.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 

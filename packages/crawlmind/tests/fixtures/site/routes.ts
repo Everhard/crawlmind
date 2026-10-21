@@ -9,6 +9,8 @@ export interface Route {
   file?: string;
   body?: string;
   location?: string;
+  /** Wait before answering, to simulate a slow page. */
+  delayMs?: number;
 }
 
 export const SITE_ROUTES: Record<string, Route> = {

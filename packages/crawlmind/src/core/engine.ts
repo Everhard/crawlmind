@@ -2,11 +2,13 @@ import { analyzeCrawl } from './analysis/analyze.js';
 import { AuditService } from './analysis/audit.js';
 import { QueryRunner } from './analysis/query.js';
 import { CrawlManager } from './crawl-manager.js';
+import { compareCrawls, type CrawlDiff } from './diff/compare.js';
 import { TransformersEmbedder, type Embedder, type ModelProgress } from './embeddings/embedder.js';
 import { LinkSuggestionService } from './embeddings/suggest.js';
 import { PsiClient, type PsiClientOptions } from './speed/psi.js';
 import { SpeedService } from './speed/service.js';
 import { databasePath } from './paths.js';
+import { exportReport, type ExportResult, type ReportFormat } from './report/export.js';
 import { CrawlStore } from './storage/crawl-store.js';
 import { openDatabase, type DB } from './storage/db.js';
 
@@ -20,6 +22,11 @@ export interface Engine {
   query: QueryRunner;
   speed: SpeedService;
   links: LinkSuggestionService;
+  compare(beforeId: string, afterId: string, limit?: number): CrawlDiff;
+  exportReport(
+    crawlId: string,
+    opts: { format: ReportFormat; path?: string; overwrite?: boolean },
+  ): ExportResult;
   close(): Promise<void>;
 }
 
@@ -47,6 +54,7 @@ export function createEngine(options: EngineOptions = {}): Engine {
   const audit = new AuditService(db, crawls);
   let embedder = options.embedder;
   const psi = new PsiClient({ apiKey: process.env.PSI_API_KEY || undefined, ...options.psi });
+  const speed = new SpeedService(db, audit, psi, options.allowPrivatePsiTargets);
   return {
     db,
     dbPath,
@@ -54,12 +62,14 @@ export function createEngine(options: EngineOptions = {}): Engine {
     crawls,
     audit,
     query,
-    speed: new SpeedService(db, audit, psi, options.allowPrivatePsiTargets),
+    speed,
     links: new LinkSuggestionService(
       db,
       audit,
       () => (embedder ??= new TransformersEmbedder(undefined, options.onModelProgress)),
     ),
+    compare: (beforeId, afterId, limit) => compareCrawls(db, audit, beforeId, afterId, limit),
+    exportReport: (crawlId, opts) => exportReport(audit, speed, crawlId, opts),
     async close() {
       await crawls.shutdown();
       query.close();
