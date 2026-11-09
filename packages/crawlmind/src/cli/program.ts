@@ -1,5 +1,6 @@
 import { Command, CommanderError } from 'commander';
 import { describeError, VERSION } from '../core/index.js';
+import { registerAddonCommands } from './commands/addon.js';
 import { registerAuditCommands } from './commands/audit.js';
 import { registerCrawlCommand } from './commands/crawl.js';
 import { registerCrawlsCommand } from './commands/crawls.js';
@@ -43,6 +44,7 @@ export function createProgram(deps: ProgramDeps): Command {
   registerAuditCommands(program, getContext);
   registerPageCommands(program, getContext);
   registerSuggestCommands(program, getContext);
+  registerAddonCommands(program, getContext);
   registerReportCommands(program, getContext);
   registerSqlCommand(program, getContext);
 

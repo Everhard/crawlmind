@@ -49,5 +49,9 @@ All notable changes to this project are documented here. The format follows
   `compare_crawls`, CLI `diff`.
 - Reports: self-contained HTML (inline CSS, light/dark, mobile) and Markdown. MCP tool
   `export_report`, CLI `report`; existing files are never overwritten by default.
+- Embeddings add-on installs on request: `suggest` and `cannibalization` (CLI and MCP) offer
+  to install it when it is missing, MCP clients are asked through elicitation, and
+  `install_embeddings` / `crawlmind addon install` install it into `~/.crawlmind/addons`
+  without a restart. `ping` and `crawlmind addon status` report whether it is installed.
 - MCP prompt `seo_audit`; `server.json` for the MCP Registry.
 - Build (tsup), lint (ESLint, Prettier), typecheck, tests (Vitest) and CI on Node 22 and 24.

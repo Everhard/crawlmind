@@ -1,6 +1,6 @@
 export { VERSION, USER_AGENT } from './version.js';
 export { logger, setLogLevel, type LogLevel } from './logger.js';
-export { dataDir, databasePath, modelsDir } from './paths.js';
+export { addonsDir, dataDir, databasePath, modelsDir } from './paths.js';
 export { CrawlmindError, describeError, type ErrorCode } from './errors.js';
 export * from './schemas.js';
 export type * from './types.js';
@@ -55,6 +55,18 @@ export {
   type Embedder,
   type ModelProgress,
 } from './embeddings/embedder.js';
+export {
+  ADDON_SIZE_NOTE,
+  MANUAL_INSTALL_HINT,
+  TRANSFORMERS_PACKAGE,
+  TRANSFORMERS_RANGE,
+  findTransformers,
+  installTransformersPackage,
+  npmCommand,
+  npmInstallArgs,
+  type EmbeddingsAddon,
+  type EmbeddingsStatus,
+} from './embeddings/addon.js';
 export {
   LinkSuggestionService,
   SUGGEST_DEFAULTS,

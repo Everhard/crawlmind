@@ -7,15 +7,31 @@ should add and shows what changed between two crawls.
 [![CI](https://github.com/Everhard/crawlmind/actions/workflows/ci.yml/badge.svg)](https://github.com/Everhard/crawlmind/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/crawlmind)](https://www.npmjs.com/package/crawlmind)
 [![MCP](https://img.shields.io/badge/MCP-server-blue)](https://modelcontextprotocol.io)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/Everhard/crawlmind/blob/main/LICENSE)
 
-## What makes it different
+## What it can do
 
-1. **Internal link suggestions.** Local multilingual embeddings find pages that are about the same
-   thing but not linked, and point to the paragraph where a link fits and the words that could
-   become its anchor. They also detect keyword cannibalization.
-2. **Crawl diffs.** Compare two crawls of the same site: new 404s, pages that lost inlinks, TTFB
-   regressions, changed titles and canonicals.
+| Feature                            | What you get                                                                                                                           | CLI                    | MCP tool                     |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ---------------------------- |
+| 🕷️ **Site crawl**                  | Follows links and sitemaps, respects robots.txt, shows live progress                                                                   | `crawl`                | `start_crawl`                |
+| 🩺 **Technical SEO audit**         | Broken links, redirect chains, canonical errors, missing and duplicate titles, thin content, orphan pages, slow pages, each with a fix | `summary`, `issues`    | `get_summary`, `get_issues`  |
+| 🔎 **Page inspector**              | Everything about one URL: status, redirects, metadata, timings, link metrics                                                           | `page`                 | `get_page`                   |
+| 🕸️ **Link graph**                  | Inlinks and outlinks by placement, click depth, internal PageRank                                                                      | `links`, `top`         | `get_links`, `get_top_pages` |
+| 📉 **Under-linked pages**          | Important pages that get too few links from content                                                                                    | `top --by underlinked` | `get_top_pages`              |
+| 🔗 **Internal link suggestions** ★ | Which page should link where, the paragraph that fits and anchor candidates                                                            | `suggest`              | `suggest_links`              |
+| 🥊 **Keyword cannibalization** ★   | Page pairs that compete for the same topic                                                                                             | `cannibalization`      | `find_cannibalization`       |
+| 🔄 **Crawl diffs** ★               | What changed since the last crawl: new 404s, lost inlinks, TTFB regressions, changed titles and canonicals                             | `diff`                 | `compare_crawls`             |
+| 📄 **Reports**                     | A single-file HTML report (light and dark, works on phones) or Markdown                                                                | `report`               | `export_report`              |
+| 🧮 **SQL access**                  | Read-only `SELECT` queries on the crawl database                                                                                       | `sql`                  | `query_data`                 |
+| 🚦 **CI gate**                     | `--fail-on critical` exits with code 1 when critical issues are found                                                                  | `crawl --fail-on`      | —                            |
+| 🤖 **Ready-made AI workflows**     | The `seo_audit` prompt ends with a prioritized fix list; `internal_linking_plan` builds a table of links to add                        | —                      | prompts                      |
+
+★ Other crawlers don't do this. Link suggestions and cannibalization use local multilingual
+embeddings: no API keys, nothing leaves your machine.
+
+More detail: [all audit checks](https://github.com/Everhard/crawlmind/blob/main/docs/checks.md),
+[MCP tools](https://github.com/Everhard/crawlmind/blob/main/docs/mcp.md) and
+[how it works](https://github.com/Everhard/crawlmind/blob/main/docs/how-it-works.md).
 
 ## Install
 
@@ -29,22 +45,8 @@ Claude Code:
 claude mcp add crawlmind -- npx -y crawlmind-mcp
 ```
 
-Claude Desktop, Cursor and other clients (JSON config):
-
-```json
-{
-  "mcpServers": {
-    "crawlmind": {
-      "command": "npx",
-      "args": ["-y", "crawlmind-mcp"]
-    }
-  }
-}
-```
-
-`crawlmind-mcp` is a shortcut for `crawlmind mcp`; both start the same server over stdio.
-For internal link suggestions, add the embeddings add-on (see
-[below](#the-embeddings-add-on)).
+For Claude Desktop, Cursor and other clients, see the
+[JSON config](https://github.com/Everhard/crawlmind/blob/main/docs/mcp.md#setup).
 
 Then ask your AI client:
 
@@ -86,130 +88,23 @@ Every command takes `--json` for machine-readable output (progress goes to stder
 The CLI and the MCP server share one local database, so you can crawl from the terminal and then
 ask your AI client about the result.
 
-## Packages
-
-| Package                                   | What it is                                |
-| ----------------------------------------- | ----------------------------------------- |
-| [`crawlmind`](packages/crawlmind)         | Engine, CLI (`crawlmind`) and MCP server  |
-| [`crawlmind-mcp`](packages/crawlmind-mcp) | Shortcut binary that runs `crawlmind mcp` |
-
-## MCP tools
-
-| Tool                   | What it does                                                                 |
-| ---------------------- | ---------------------------------------------------------------------------- |
-| `start_crawl`          | Start a background crawl and return its `crawl_id`                           |
-| `get_crawl_status`     | Progress of a crawl; `wait_seconds` waits and streams progress               |
-| `cancel_crawl`         | Stop a running crawl, keeping the pages fetched so far                       |
-| `list_crawls`          | Past and running crawls, filterable by site                                  |
-| `get_summary`          | Key numbers and top issues by severity, with examples and recommendations    |
-| `get_issues`           | Issues filtered by severity; with `check_id`, every affected URL (paginated) |
-| `get_page`             | Everything about one URL: status, redirects, metadata, timings, link metrics |
-| `get_links`            | Inlinks or outlinks of a URL with anchors, `rel` and placement               |
-| `get_top_pages`        | Pages by PageRank, inlinks, depth, TTFB, or `underlinked` important pages    |
-| `suggest_links`        | Internal links to add: source page, paragraph and anchor candidates          |
-| `find_cannibalization` | Page pairs that compete for the same topic                                   |
-| `compare_crawls`       | Diff two crawls: new and fixed errors, lost inlinks, TTFB regressions        |
-| `export_report`        | Write a self-contained HTML or Markdown report to a file                     |
-| `query_data`           | Read-only SQL `SELECT` on the crawl database, row-limited                    |
-| `ping`                 | Health check                                                                 |
-
-Prompts: `seo_audit` runs the full audit workflow and ends with a prioritized fix list;
-`internal_linking_plan` turns link suggestions into a table of links to add.
-
-Resources: `crawlmind://checks/{id}` documents each check (why it matters, how to fix), and
-`crawlmind://crawls/{id}/summary` gives the summary of a crawl.
-
-## Checks
-
-Every issue has the same shape: `id`, `severity` (critical, warning, info), `title`, `count`,
-up to five `examples` and a `recommendation`.
-
-| Area      | Checks                                                                                                 |
-| --------- | ------------------------------------------------------------------------------------------------------ |
-| Status    | 4xx and 5xx pages, unreachable pages                                                                   |
-| Links     | broken internal and external links, links to redirects, internal `nofollow`, generic and empty anchors |
-| Redirects | chains longer than one hop, loops                                                                      |
-| Sitemap   | orphan pages, `noindex` pages listed, non-200 URLs listed                                              |
-| Canonical | canonical to an error page, to a redirect, to a different page                                         |
-| Content   | missing or duplicate titles, meta descriptions and H1, thin content (default < 200 words)              |
-| Structure | pages more than 3 clicks deep                                                                          |
-| Speed     | TTFB over 800 ms, HTML over 1 MB, mixed content                                                        |
-
-Generic anchors ("click here", "read more", "подробнее", "mehr erfahren", …) are listed per
-language in [`generic-anchors.ts`](packages/crawlmind/src/core/config/generic-anchors.ts).
-
-### Link graph
-
-Inlinks and outlinks are counted per page and by placement (nav, header, footer, main, other),
-with links through redirects credited to the final page. Click depth is a breadth-first search
-from the start URL. Internal PageRank uses damping 0.85, spreads the rank of pages without
-outlinks evenly, ignores `nofollow`, and iterates until the total change is below 1e-6;
-scores are shown 0–100 relative to the strongest page.
-
-## Internal link suggestions
-
-Crawlmind embeds every indexable page (title, H1 and the start of the main content) with a
-local model and looks for pages that are about the same topic as a target but do not link to it
-yet. For each pair it returns:
-
-- the **paragraph** of the source page that fits the target best (paragraphs of the main
-  content are embedded separately),
-- **anchor candidates**: phrases from that paragraph that share key words with the target's
-  title and H1, matched by word prefixes so inflected forms count (`беговые кроссовки` for
-  "Лучшие беговые кроссовки"),
-- the similarity and the target's content inlinks and PageRank.
-
-Without a target, the most link-worthy pages come first: rank =
-`similarity × (1 + importance / (1 + content inlinks))`, where importance is the larger of the
-page's relative PageRank and its sitemap priority. Crawlmind never writes the final sentence;
-your AI client does, from this context. No API keys are involved.
-
-**Cannibalization**: pairs of indexable pages whose embeddings are at least 0.92 similar and
-whose title/H1 key words overlap by at least 50%.
-
 ### The embeddings add-on
 
-The model runs locally with [transformers.js](https://huggingface.co/docs/transformers.js).
-Its ONNX runtime is several hundred megabytes, so it is an optional peer dependency and
-everything else works without it. To enable link suggestions:
+Internal link suggestions and cannibalization run a local embedding model. It takes about
+700 MB of packages plus a 120 MB model, so it is an optional add-on, and everything else works
+without it.
+
+You don't need to install it up front. The first time you ask for link suggestions, Crawlmind
+asks whether to install it, installs it into `~/.crawlmind`, and then answers your request. You
+can also install it yourself: ask your AI client to "install the Crawlmind embeddings add-on",
+or run:
 
 ```bash
-npm install -g crawlmind @huggingface/transformers
-# or, without installing:
-npx -p crawlmind -p @huggingface/transformers crawlmind suggest
+crawlmind addon install   # crawlmind addon status shows whether it is installed
 ```
 
-For MCP clients:
-
-```bash
-claude mcp add crawlmind -- npx -y -p crawlmind-mcp -p @huggingface/transformers crawlmind-mcp
-```
-
-The model is downloaded once (about 120 MB) into `~/.crawlmind/models`. Page vectors are stored
-per crawl; paragraph vectors are computed only for pages that appear in suggestions.
-
-**Model choice.** [`Xenova/multilingual-e5-small`](https://huggingface.co/Xenova/multilingual-e5-small)
-(8-bit quantized, 384 dimensions) covers about 100 languages, which matters for sites that are
-not in English, and is strong at retrieval for its size: it is the smallest of the e5 family
-that clearly beats older multilingual MiniLM models on retrieval benchmarks, while still
-embedding hundreds of pages per minute on a laptop CPU. Its cosine similarities cluster high,
-so the default thresholds (0.82 for suggestions, 0.92 for cannibalization) are tuned for it.
-
-## Crawl diffs and reports
-
-Crawls are kept, so any two crawls of a site can be compared (`compare_crawls`,
-`crawlmind diff`): new and fixed 4xx/5xx pages, new and fixed broken links, pages added and
-removed, the pages that gained or lost the most inlinks, TTFB regressions (at least 200 ms and
-50% slower), title and canonical changes, and how each issue count moved. A warning is added
-when the crawls differ much in size, since "removed" pages may just not have been reached.
-
-Reports (`export_report`, `crawlmind report`) contain the summary, every issue with up to ten
-examples and its fix, under-linked important pages, and the strongest and
-slowest pages. The HTML version is a single file with inline CSS, no scripts, light and dark
-themes, and works on phones. A report never replaces an existing file unless asked to, and
-never writes through a symbolic link. MCP clients write only inside `~/.crawlmind/reports`
-unless the server runs with `CRAWLMIND_ALLOW_REPORT_PATHS=1`, so instructions hidden in a
-crawled page cannot make the AI client overwrite your files.
+Some MCP clients (Claude Desktop, for example) can't show the server's question yet. In those
+clients the AI asks you in the chat instead, and installs the add-on once you agree.
 
 ## Configuration
 
@@ -220,20 +115,6 @@ crawled page cannot make the AI client overwrite your files.
 | `CRAWLMIND_LOG_LEVEL`              | `debug`, `info`, `warn` (default), `error` or `silent`; logs go to stderr |
 | `CRAWLMIND_ALLOW_REPORT_PATHS`     | `1` lets MCP clients write reports outside `~/.crawlmind/reports`         |
 
-## Crawling rules
-
-- Identifies itself as `CrawlmindBot/<version> (+https://github.com/Everhard/crawlmind)`.
-- Follows robots.txt, including `Crawl-delay` (capped at 10 s), unless told not to.
-- Defaults: 500 pages (hard cap 10,000), depth 10, 4 parallel requests, 250 ms between
-  requests to the same host, 15 s timeout, 5 MB per page.
-- Only `text/html` is parsed. Sitemaps (from robots.txt and `/sitemap.xml`, indexes and gzip
-  included) add URLs that links do not reach.
-- Refuses private, loopback and link-local addresses, checked on every connection and redirect
-  hop (DNS rebinding included). For intranet or local sites use `--allow-private` in the CLI.
-  MCP clients may only set `allowPrivateNetworks` when the server runs with
-  `CRAWLMIND_ALLOW_PRIVATE_NETWORKS=1`, so a prompt injection on a crawled page cannot turn the
-  AI client into a local network scanner.
-
 ## Limits
 
 - No JavaScript rendering: pages are analyzed as the server sends them. Sites that build their
@@ -241,32 +122,19 @@ crawled page cannot make the AI client overwrite your files.
 - One site per crawl (optionally with subdomains), up to 10,000 pages.
 - Crawlmind only reads. No tool changes the audited site.
 
+What the crawler sends and which limits it respects: see the
+[crawling rules](https://github.com/Everhard/crawlmind/blob/main/docs/how-it-works.md#crawling-rules).
+
 ## Privacy
 
 Everything stays on your machine, in `~/.crawlmind` (override with `CRAWLMIND_HOME`). Crawlmind
-contacts only the site you crawl, and Hugging Face once to download the embedding model when you first use link suggestions. No
-telemetry.
+contacts only the site you crawl. When you install the embeddings add-on, it also contacts the
+npm registry and Hugging Face once, to download the packages and the model. No telemetry.
 
 ## Development
 
-```bash
-npm install
-npm run build
-npm run lint && npm run typecheck && npm test
-```
-
-Try the MCP server in the official inspector:
-
-```bash
-npx @modelcontextprotocol/inspector node packages/crawlmind/dist/cli.js mcp
-```
-
-Layout: `packages/crawlmind/src/core` is the engine (crawler, storage, analysis,
-embeddings, report, diff) and never imports the MCP SDK or CLI libraries; `src/mcp` and
-`src/cli` are thin layers over it.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/Everhard/crawlmind/blob/main/CONTRIBUTING.md).
 
 ## License
 
-[MIT](LICENSE) © 2026 Andrew Dorokhov
+[MIT](https://github.com/Everhard/crawlmind/blob/main/LICENSE) © 2026 Andrew Dorokhov

@@ -3,6 +3,7 @@ import type { CliContext } from '../context.js';
 import { displayUrl, formatNumber, terminalWidth, truncateMiddle, wrapText } from '../ui/format.js';
 import { createProgressLine, type ProgressLine } from '../ui/progress.js';
 import { renderTable } from '../ui/table.js';
+import { ensureAddon } from './addon.js';
 import { resolveCrawlId } from './audit.js';
 
 const intArg = (v: string) => Number.parseInt(v, 10);
@@ -49,6 +50,7 @@ export function registerSuggestCommands(program: Command, getContext: () => CliC
           opts.target && !/^https?:/i.test(opts.target)
             ? new URL(opts.target, site).toString()
             : opts.target;
+        await ensureAddon(ctx);
         const page = await withEmbeddingProgress(ctx, (line) =>
           ctx.engine.links.suggest(crawlId, {
             targetUrl: target,
@@ -103,6 +105,7 @@ export function registerSuggestCommands(program: Command, getContext: () => CliC
       const ctx = getContext();
       const crawlId = resolveCrawlId(ctx, opts.crawl);
       const site = ctx.engine.crawls.requireCrawl(crawlId).site;
+      await ensureAddon(ctx);
       const page = await withEmbeddingProgress(ctx, (line) =>
         ctx.engine.links.cannibalization(crawlId, {
           limit: opts.limit,

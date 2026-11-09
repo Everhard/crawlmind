@@ -50,13 +50,18 @@ describe('MCP server', () => {
         'find_cannibalization',
         'compare_crawls',
         'export_report',
+        'install_embeddings',
       ]),
     );
   });
 
   it('answers ping', async () => {
     const result = await client.callTool({ name: 'ping', arguments: {} });
-    expect(result.structuredContent).toEqual({ ok: true, version: VERSION });
+    expect(result.structuredContent).toEqual({
+      ok: true,
+      version: VERSION,
+      embeddings: 'installed',
+    });
   });
 
   it('runs a crawl in the background and reports progress while waiting', async () => {

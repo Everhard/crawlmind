@@ -13,3 +13,8 @@ export function databasePath(): string {
 export function modelsDir(): string {
   return join(dataDir(), 'models');
 }
+
+/** Optional packages Crawlmind installs on request (the embeddings add-on). */
+export function addonsDir(): string {
+  return join(dataDir(), 'addons');
+}

@@ -1,6 +1,7 @@
 import { CrawlmindError } from '../errors.js';
 import { logger } from '../logger.js';
 import { modelsDir } from '../paths.js';
+import { loadTransformers, MANUAL_INSTALL_HINT } from './addon.js';
 
 /** Turns texts into L2-normalized vectors. */
 export interface Embedder {
@@ -34,12 +35,10 @@ interface TransformersModule {
   ) => Promise<unknown>;
 }
 
-// Kept in a variable so bundlers leave the optional import alone.
-const TRANSFORMERS_PACKAGE = '@huggingface/transformers';
-
 /**
  * Local embeddings with transformers.js, loaded on first use. The package is an optional peer
- * dependency (its ONNX runtime is several hundred MB), so it is imported dynamically.
+ * dependency (its ONNX runtime is several hundred MB), so it is imported dynamically, either
+ * from next to Crawlmind or from the add-ons folder (see addon.ts).
  */
 export class TransformersEmbedder implements Embedder {
   private extractor: Promise<FeatureExtractor> | null = null;
@@ -51,16 +50,12 @@ export class TransformersEmbedder implements Embedder {
 
   private load(): Promise<FeatureExtractor> {
     this.extractor ??= (async () => {
-      let transformers: TransformersModule;
-      try {
-        transformers = (await import(TRANSFORMERS_PACKAGE)) as TransformersModule;
-      } catch {
+      const transformers = await loadTransformers<TransformersModule>();
+      if (!transformers) {
         throw new CrawlmindError(
           'invalid_input',
-          'Link suggestions need the optional package @huggingface/transformers.',
-          'Install it next to Crawlmind: `npm install -g crawlmind @huggingface/transformers`, or run ' +
-            '`npx -p crawlmind -p @huggingface/transformers crawlmind …` ' +
-            '(MCP: `npx -y -p crawlmind-mcp -p @huggingface/transformers crawlmind-mcp`).',
+          'Link suggestions need the embeddings add-on, which is not installed.',
+          `Run \`crawlmind addon install\` (MCP clients: call install_embeddings). ${MANUAL_INSTALL_HINT}`,
         );
       }
       transformers.env.cacheDir = modelsDir();

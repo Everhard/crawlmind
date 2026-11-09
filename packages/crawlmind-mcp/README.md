@@ -15,4 +15,7 @@ claude mcp add crawlmind -- npx -y crawlmind-mcp
 }
 ```
 
+Tools, prompts and setup for other clients:
+[docs/mcp.md](https://github.com/Everhard/crawlmind/blob/main/docs/mcp.md).
+
 MIT © 2026 Andrew Dorokhov
