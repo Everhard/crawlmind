@@ -6,13 +6,9 @@ import {
   type EngineOptions,
 } from '../../src/core/index.js';
 
-/** An engine on an in-memory database, never using a real PSI key. */
+/** An engine on an in-memory database. */
 export function createTestEngine(options: EngineOptions = {}): Engine {
-  return createEngine({
-    dbPath: ':memory:',
-    ...options,
-    psi: { apiKey: undefined, ...options.psi },
-  });
+  return createEngine({ dbPath: ':memory:', ...options });
 }
 
 /** Crawl a local fixture site with test-friendly defaults and wait for the result. */

@@ -3,7 +3,6 @@ import { dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node
 import type { AuditService } from '../analysis/audit.js';
 import { CrawlmindError } from '../errors.js';
 import { dataDir } from '../paths.js';
-import type { SpeedService } from '../speed/service.js';
 import { collectReportData } from './data.js';
 import { renderHtmlReport } from './html.js';
 import { renderMarkdownReport } from './markdown.js';
@@ -41,7 +40,6 @@ export interface ExportResult {
  */
 export function exportReport(
   audit: AuditService,
-  speed: SpeedService,
   crawlId: string,
   opts: {
     format: ReportFormat;
@@ -95,7 +93,7 @@ export function exportReport(
     );
   }
 
-  const data = collectReportData(audit, speed, crawlId);
+  const data = collectReportData(audit, crawlId);
   const content = opts.format === 'html' ? renderHtmlReport(data) : renderMarkdownReport(data);
   writeFileSync(target, content, 'utf8');
   return { path: target, format: opts.format, bytes: Buffer.byteLength(content) };

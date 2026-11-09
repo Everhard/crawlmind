@@ -49,7 +49,6 @@ export const MIGRATIONS: readonly string[] = [
     scripts_count     INTEGER,
     stylesheets_count INTEGER,
     mixed_content_json TEXT,
-    template_id       INTEGER,
     fetched_at        TEXT,
     UNIQUE (crawl_id, url)
   );
@@ -122,44 +121,7 @@ export const MIGRATIONS: readonly string[] = [
   CREATE INDEX issue_items_check ON issue_items (crawl_id, check_id);
   CREATE INDEX issue_items_url ON issue_items (crawl_id, url);
   `,
-  // 3: templates and PageSpeed Insights
-  `
-  ALTER TABLE pages ADD COLUMN dom_signature BLOB;
-
-  CREATE TABLE templates (
-    id                INTEGER PRIMARY KEY,
-    crawl_id          TEXT NOT NULL REFERENCES crawls (id) ON DELETE CASCADE,
-    pattern           TEXT NOT NULL,
-    variant           INTEGER NOT NULL,
-    page_count        INTEGER NOT NULL,
-    ttfb_median       REAL,
-    ttfb_p90          REAL,
-    download_median   REAL,
-    html_bytes_median INTEGER,
-    word_count_median INTEGER,
-    representatives_json TEXT NOT NULL
-  );
-  CREATE INDEX templates_crawl ON templates (crawl_id);
-
-  CREATE TABLE psi_results (
-    id                INTEGER PRIMARY KEY,
-    crawl_id          TEXT NOT NULL REFERENCES crawls (id) ON DELETE CASCADE,
-    template_id       INTEGER REFERENCES templates (id) ON DELETE SET NULL,
-    url               TEXT NOT NULL,
-    strategy          TEXT NOT NULL,
-    measured_at       TEXT NOT NULL,
-    performance_score REAL,
-    lcp_ms            REAL,
-    cls               REAL,
-    tbt_ms            REAL,
-    fcp_ms            REAL,
-    total_bytes       INTEGER,
-    field_json        TEXT,
-    error             TEXT
-  );
-  CREATE INDEX psi_results_crawl ON psi_results (crawl_id, url, strategy);
-  `,
-  // 4: content for link suggestions
+  // 3: content for link suggestions
   `
   ALTER TABLE pages ADD COLUMN content_excerpt TEXT;
 

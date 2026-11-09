@@ -24,15 +24,13 @@ export interface QueryResult {
 /** Short schema overview for people and AI clients writing queries. */
 export const QUERY_SCHEMA_HINT = [
   'crawls(id, site, start_url, status, started_at, finished_at, pages_crawled)',
-  'pages(id, crawl_id, url, final_url, status, fetch_error, content_type, depth, in_sitemap, sitemap_priority, blocked_by_robots, redirect_count, ttfb_ms, download_ms, html_bytes, title, meta_description, h1_json, canonical, meta_robots, x_robots_tag, lang, word_count, content_hash, scripts_count, stylesheets_count, mixed_content_json, template_id)',
+  'pages(id, crawl_id, url, final_url, status, fetch_error, content_type, depth, in_sitemap, sitemap_priority, blocked_by_robots, redirect_count, ttfb_ms, download_ms, html_bytes, title, meta_description, h1_json, canonical, meta_robots, x_robots_tag, lang, word_count, content_hash, scripts_count, stylesheets_count, mixed_content_json)',
   'links(id, crawl_id, source_page_id, target_url, anchor, rel, nofollow, is_internal, placement)',
   'redirect_hops(page_id, hop_index, url, status)',
   'external_links(crawl_id, url, status, error, final_url)',
   'page_metrics(page_id, crawl_id, indexable, inlinks, unique_inlinks, main_inlinks, outlinks, external_outlinks, unique_anchors, click_depth, pagerank)',
   'issues(crawl_id, check_id, severity, count)',
   'issue_items(id, crawl_id, check_id, url, detail)',
-  'templates(id, crawl_id, pattern, variant, page_count, ttfb_median, ttfb_p90, download_median, html_bytes_median, word_count_median)',
-  'psi_results(crawl_id, template_id, url, strategy, measured_at, performance_score, lcp_ms, cls, tbt_ms, fcp_ms, total_bytes, field_json, error)',
 ].join('\n');
 
 /**

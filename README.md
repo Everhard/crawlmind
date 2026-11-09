@@ -2,8 +2,7 @@
 
 **AI-native SEO audits from your terminal or any MCP client.** Crawlmind crawls a website, finds
 technical SEO problems, and goes further than other crawlers: it suggests the internal links you
-should add, measures page speed per template instead of per page, and shows what changed between
-two crawls.
+should add and shows what changed between two crawls.
 
 [![CI](https://github.com/Everhard/crawlmind/actions/workflows/ci.yml/badge.svg)](https://github.com/Everhard/crawlmind/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/crawlmind)](https://www.npmjs.com/package/crawlmind)
@@ -15,10 +14,7 @@ two crawls.
 1. **Internal link suggestions.** Local multilingual embeddings find pages that are about the same
    thing but not linked, and point to the paragraph where a link fits and the words that could
    become its anchor. They also detect keyword cannibalization.
-2. **Speed by template.** Every crawled page gets TTFB and download timings. Pages are grouped
-   into templates, and Lighthouse (via the PageSpeed Insights API) runs only on one or two
-   representatives of each, so one fix covers thousands of pages.
-3. **Crawl diffs.** Compare two crawls of the same site: new 404s, pages that lost inlinks, TTFB
+2. **Crawl diffs.** Compare two crawls of the same site: new 404s, pages that lost inlinks, TTFB
    regressions, changed titles and canonicals.
 
 ## Install
@@ -54,7 +50,7 @@ Then ask your AI client:
 
 - "Audit https://example.com and give me the top 10 fixes."
 - "Which internal links should I add to my blog?"
-- "Which templates on my shop are slow on mobile?"
+- "Which pages on my site respond slowest?"
 - "Crawl the site again and tell me what broke since last week."
 - "Export an HTML report of the last crawl to ~/Desktop/audit.html."
 
@@ -78,8 +74,6 @@ crawlmind top --by underlinked               # important pages that need more li
 crawlmind suggest                            # internal links to add (needs the embeddings add-on)
 crawlmind suggest --target /pricing          # links that should point to one page
 crawlmind cannibalization                    # pages competing for the same topic
-crawlmind templates                          # page templates with TTFB per template
-crawlmind speed                              # PageSpeed Insights on template representatives
 crawlmind diff                               # what changed between the two latest crawls
 crawlmind report -o audit.html               # self-contained HTML report (or -f md)
 crawlmind sql "SELECT url, ttfb_ms FROM pages ORDER BY ttfb_ms DESC LIMIT 10"
@@ -112,8 +106,6 @@ ask your AI client about the result.
 | `get_page`             | Everything about one URL: status, redirects, metadata, timings, link metrics |
 | `get_links`            | Inlinks or outlinks of a URL with anchors, `rel` and placement               |
 | `get_top_pages`        | Pages by PageRank, inlinks, depth, TTFB, or `underlinked` important pages    |
-| `get_templates`        | Templates with page counts, TTFB median/p90 and PageSpeed results            |
-| `measure_templates`    | Lighthouse (PageSpeed Insights) on 1–2 representatives per template          |
 | `suggest_links`        | Internal links to add: source page, paragraph and anchor candidates          |
 | `find_cannibalization` | Page pairs that compete for the same topic                                   |
 | `compare_crawls`       | Diff two crawls: new and fixed errors, lost inlinks, TTFB regressions        |
@@ -203,35 +195,6 @@ that clearly beats older multilingual MiniLM models on retrieval benchmarks, whi
 embedding hundreds of pages per minute on a laptop CPU. Its cosine similarities cluster high,
 so the default thresholds (0.82 for suggestions, 0.92 for cannibalization) are tuned for it.
 
-## Speed by template
-
-Every crawled page gets its time to first byte and download time. Pages are then grouped into
-templates, and Lighthouse runs only on one or two representatives per template, so a site with
-thousands of product pages needs a handful of PageSpeed Insights calls instead of thousands:
-
-> 3,400 pages use template `/product/*` with mobile LCP 4.2 s (real-user, poor), score 38.
-> Fixing this one template improves all of them.
-
-How pages are grouped:
-
-1. **URL pattern.** Path segments are compared level by level. Numbers, dates, UUIDs, hex ids
-   and long slugs become `*`; siblings that differ only in digits (`post-1`, `post-2`) become
-   `*`; below the first level, four or more distinct sibling values become `*`. First-level
-   sections (`/blog`, `/shop`) are never merged by count alone.
-2. **DOM structure.** Each page's skeleton (the set of tag paths below `<body>`, six levels
-   deep, ignoring text and attributes) is reduced to a 32-value MinHash signature. Within one
-   URL pattern, pages whose estimated Jaccard similarity is at least 0.8 form one template,
-   so `/p/*` pages with two different layouts become two templates.
-3. **Representatives** are the pages whose TTFB is closest to the template median: typical,
-   not the best or worst case.
-
-PageSpeed Insights runs on demand (`measure_templates` / `crawlmind speed`), mobile by default,
-with a 60 s timeout and retries with backoff. Results (performance score, LCP, CLS, TBT, FCP,
-page weight and CrUX field data when Google has it) are stored per crawl and reused. Without
-`PSI_API_KEY` Crawlmind uses Google's shared keyless quota one request at a time, which is
-often exhausted; a [free API key](https://developers.google.com/speed/docs/insights/v5/get-started)
-raises it.
-
 ## Crawl diffs and reports
 
 Crawls are kept, so any two crawls of a site can be compared (`compare_crawls`,
@@ -241,7 +204,7 @@ removed, the pages that gained or lost the most inlinks, TTFB regressions (at le
 when the crawls differ much in size, since "removed" pages may just not have been reached.
 
 Reports (`export_report`, `crawlmind report`) contain the summary, every issue with up to ten
-examples and its fix, under-linked important pages, speed by template, and the strongest and
+examples and its fix, under-linked important pages, and the strongest and
 slowest pages. The HTML version is a single file with inline CSS, no scripts, light and dark
 themes, and works on phones. A report never replaces an existing file unless asked to, and
 never writes through a symbolic link. MCP clients write only inside `~/.crawlmind/reports`
@@ -253,7 +216,6 @@ crawled page cannot make the AI client overwrite your files.
 | Variable                           | Purpose                                                                   |
 | ---------------------------------- | ------------------------------------------------------------------------- |
 | `CRAWLMIND_HOME`                   | Data directory (default `~/.crawlmind`)                                   |
-| `PSI_API_KEY`                      | PageSpeed Insights API key                                                |
 | `CRAWLMIND_ALLOW_PRIVATE_NETWORKS` | `1` lets MCP clients crawl private and local addresses                    |
 | `CRAWLMIND_LOG_LEVEL`              | `debug`, `info`, `warn` (default), `error` or `silent`; logs go to stderr |
 | `CRAWLMIND_ALLOW_REPORT_PATHS`     | `1` lets MCP clients write reports outside `~/.crawlmind/reports`         |
@@ -282,8 +244,7 @@ crawled page cannot make the AI client overwrite your files.
 ## Privacy
 
 Everything stays on your machine, in `~/.crawlmind` (override with `CRAWLMIND_HOME`). Crawlmind
-contacts only the site you crawl, the PageSpeed Insights API when you measure templates, and
-Hugging Face once to download the embedding model when you first use link suggestions. No
+contacts only the site you crawl, and Hugging Face once to download the embedding model when you first use link suggestions. No
 telemetry.
 
 ## Development
@@ -300,7 +261,7 @@ Try the MCP server in the official inspector:
 npx @modelcontextprotocol/inspector node packages/crawlmind/dist/cli.js mcp
 ```
 
-Layout: `packages/crawlmind/src/core` is the engine (crawler, storage, analysis, speed,
+Layout: `packages/crawlmind/src/core` is the engine (crawler, storage, analysis,
 embeddings, report, diff) and never imports the MCP SDK or CLI libraries; `src/mcp` and
 `src/cli` are thin layers over it.
 

@@ -220,7 +220,7 @@ export const CHECKS: readonly CheckInfo[] = [
     title: 'Slow server response (TTFB over 800 ms)',
     recommendation: 'Speed up the server response with caching or a faster backend.',
     why: 'Time to first byte delays everything else on the page and hurts Core Web Vitals such as LCP.',
-    fix: 'Add page or edge caching, optimize slow database queries, or move to faster hosting. Check get_templates: slow pages often share one template.',
+    fix: 'Add page or edge caching, optimize slow database queries, or move to faster hosting. Use get_top_pages with by=ttfb to find the slowest pages; slow pages often share one template.',
   },
   {
     id: 'speed.large_html',

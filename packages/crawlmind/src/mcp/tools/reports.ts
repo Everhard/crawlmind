@@ -102,7 +102,7 @@ export function registerReportTools(
       title: 'Export report',
       description:
         'Write a self-contained HTML or Markdown audit report (summary, all issues with examples, ' +
-        'under-linked pages, speed by template, strongest and slowest pages) to a file. The path ' +
+        'under-linked pages, strongest and slowest pages) to a file. The path ' +
         'must end in .html/.md and lie inside ~/.crawlmind/reports (the default) unless the server ' +
         'allows other paths; existing files are kept unless overwrite=true.',
       inputSchema: {

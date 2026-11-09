@@ -1,7 +1,7 @@
 {
   "name": "crawlmind",
   "version": "0.1.0",
-  "description": "AI-native SEO audits from the terminal or any MCP client: broken links, internal link suggestions, page speed by template, crawl diffs.",
+  "description": "AI-native SEO audits from the terminal or any MCP client: broken links, internal link suggestions, crawl diffs.",
   "type": "module",
   "license": "MIT",
   "author": "Andrew Dorokhov <andrew@dorokhov.dev>",
@@ -19,7 +19,6 @@
     "crawler",
     "internal-links",
     "broken-links",
-    "page-speed",
     "cli"
   ],
   "bin": {

@@ -146,7 +146,6 @@ export async function runCrawl(params: RunCrawlParams): Promise<CrawlStats> {
           scriptsCount: data.scriptsCount,
           stylesheetsCount: data.stylesheetsCount,
           mixedContent: data.mixedContent,
-          domSignature: data.domSignature,
           contentExcerpt: data.contentExcerpt,
           paragraphs: data.paragraphs,
         },

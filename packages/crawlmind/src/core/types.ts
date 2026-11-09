@@ -28,7 +28,6 @@ export interface PageRecord {
   scriptsCount: number | null;
   stylesheetsCount: number | null;
   mixedContent: string[];
-  domSignature: Uint32Array | null;
   contentExcerpt: string | null;
   paragraphs: string[];
 }
@@ -83,7 +82,6 @@ export function emptyPage(url: string): PageRecord {
     scriptsCount: null,
     stylesheetsCount: null,
     mixedContent: [],
-    domSignature: null,
     contentExcerpt: null,
     paragraphs: [],
   };

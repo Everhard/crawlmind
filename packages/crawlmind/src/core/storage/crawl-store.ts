@@ -1,6 +1,5 @@
 import type { CrawlInfo, CrawlOptions, CrawlStatus } from '../schemas.js';
 import type { LinkRecord, PageRecord, Paginated, RedirectHopRecord } from '../types.js';
-import { signatureToBuffer } from '../speed/fingerprint.js';
 import type { DB } from './db.js';
 
 interface CrawlRow {
@@ -129,13 +128,13 @@ export class CrawlStore {
          crawl_id, url, final_url, status, fetch_error, content_type, depth, in_sitemap,
          sitemap_priority, blocked_by_robots, redirect_count, ttfb_ms, download_ms, html_bytes,
          truncated, title, meta_description, h1_json, canonical, meta_robots, x_robots_tag, lang,
-         word_count, content_hash, scripts_count, stylesheets_count, mixed_content_json, dom_signature, content_excerpt,
+         word_count, content_hash, scripts_count, stylesheets_count, mixed_content_json, content_excerpt,
          fetched_at
        ) VALUES (
          @crawlId, @url, @finalUrl, @status, @fetchError, @contentType, @depth, @inSitemap,
          @sitemapPriority, @blockedByRobots, @redirectCount, @ttfbMs, @downloadMs, @htmlBytes,
          @truncated, @title, @metaDescription, @h1Json, @canonical, @metaRobots, @xRobotsTag, @lang,
-         @wordCount, @contentHash, @scriptsCount, @stylesheetsCount, @mixedContentJson, @domSignature, @contentExcerpt,
+         @wordCount, @contentHash, @scriptsCount, @stylesheetsCount, @mixedContentJson, @contentExcerpt,
          @fetchedAt
        )`,
     );
@@ -161,7 +160,6 @@ export class CrawlStore {
           truncated: b(page.truncated),
           h1Json: JSON.stringify(page.h1),
           mixedContentJson: JSON.stringify(page.mixedContent),
-          domSignature: page.domSignature ? signatureToBuffer(page.domSignature) : null,
           fetchedAt: new Date().toISOString(),
         }).lastInsertRowid,
       );

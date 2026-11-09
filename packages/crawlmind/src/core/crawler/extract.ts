@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import * as cheerio from 'cheerio';
 import type { AnyNode, Element } from 'domhandler';
 import type { LinkPlacement } from '../schemas.js';
-import { minHash, skeletonPaths } from '../speed/fingerprint.js';
 import { isNonHttpHref, normalizeUrl } from './url.js';
 
 export interface ExtractedLink {
@@ -27,8 +26,6 @@ export interface ExtractedPage {
   /** http:// subresources on an https page. */
   mixedContent: string[];
   links: ExtractedLink[];
-  /** MinHash of the DOM skeleton, for template grouping. */
-  domSignature: Uint32Array;
   /** Start of the main content, for page embeddings. */
   contentExcerpt: string;
   /** Paragraphs of the main content, for link suggestions. */
@@ -196,7 +193,6 @@ export function extractPage(html: string, pageUrl: string): ExtractedPage {
     stylesheetsCount: $('link[rel~="stylesheet"]').length,
     mixedContent,
     links,
-    domSignature: minHash(skeletonPaths($)),
     contentExcerpt: text.slice(0, 2000),
     paragraphs,
   };

@@ -32,6 +32,7 @@ describe('MCP server', () => {
 
   it('lists its tools', async () => {
     const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name)).not.toContain('get_templates');
     expect(tools.map((t) => t.name)).toEqual(
       expect.arrayContaining([
         'ping',
@@ -45,8 +46,6 @@ describe('MCP server', () => {
         'get_links',
         'get_top_pages',
         'query_data',
-        'get_templates',
-        'measure_templates',
         'suggest_links',
         'find_cannibalization',
         'compare_crawls',
@@ -151,14 +150,6 @@ describe('MCP server', () => {
       arguments: { sql: 'DROP TABLE pages' },
     });
     expect(write.isError).toBe(true);
-  });
-
-  it('lists templates', async () => {
-    const res = await client.callTool({ name: 'get_templates', arguments: { crawl_id: crawlId } });
-    const items = (res.structuredContent as { items: { label: string; pageCount: number }[] })
-      .items;
-    expect(items.find((t) => t.label === '/blog/*')?.pageCount).toBe(3);
-    expect(JSON.stringify(res.content)).toContain('measure_templates');
   });
 
   it('suggests links and offers the linking plan prompt', async () => {

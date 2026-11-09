@@ -68,28 +68,7 @@ export function renderMarkdownReport(data: ReportData): string {
     ...pageTable(data.underlinked, site),
     '',
   );
-  lines.push('## Speed by template', '');
-  if (data.templates.length === 0) lines.push('No templates.');
-  else {
-    lines.push(
-      '| Template | Pages | TTFB p50 | TTFB p90 | Mobile score | LCP |',
-      '| --- | ---: | ---: | ---: | ---: | ---: |',
-    );
-    for (const tpl of data.templates) {
-      const mm = tpl.measurements.find((x) => x.strategy === 'mobile' && !x.error);
-      const lcp = mm?.field?.lcpMs ?? mm?.lcpMs ?? null;
-      lines.push(
-        `| ${m(tpl.label)} | ${num(tpl.pageCount)} | ${ms(tpl.ttfbMedianMs)} | ${ms(tpl.ttfbP90Ms)} | ${mm?.performanceScore ?? '—'} | ${lcp === null ? '—' : `${(lcp / 1000).toFixed(1)} s`} |`,
-      );
-    }
-  }
-  lines.push(
-    '',
-    '## Strongest pages (internal PageRank)',
-    '',
-    ...pageTable(data.topPages, site),
-    '',
-  );
+  lines.push('## Strongest pages (internal PageRank)', '', ...pageTable(data.topPages, site), '');
   lines.push('## Slowest pages (TTFB)', '', ...pageTable(data.slowestPages, site), '');
   lines.push(
     '---',

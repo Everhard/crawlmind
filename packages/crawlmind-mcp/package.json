@@ -18,8 +18,7 @@
     "seo",
     "crawler",
     "internal-links",
-    "broken-links",
-    "page-speed"
+    "broken-links"
   ],
   "bin": {
     "crawlmind-mcp": "dist/index.js"

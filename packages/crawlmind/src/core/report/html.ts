@@ -1,6 +1,5 @@
 import type { TopPage } from '../analysis/audit.js';
 import type { Issue, Severity } from '../analysis/checks.js';
-import type { TemplateInfo } from '../speed/service.js';
 import { VERSION } from '../version.js';
 import type { ReportData } from './data.js';
 
@@ -97,17 +96,6 @@ function pageTable(pages: TopPage[], site: string): string {
     .join('')}</tbody></table></div>`;
 }
 
-function templateTable(templates: TemplateInfo[], site: string): string {
-  if (templates.length === 0) return '<p class="muted">No templates.</p>';
-  return `<div class="table"><table><thead><tr><th>Template</th><th class="n">Pages</th><th class="n">TTFB p50</th><th class="n">TTFB p90</th><th class="n">Mobile score</th><th class="n">LCP</th><th>Example</th></tr></thead><tbody>${templates
-    .map((t) => {
-      const m = t.measurements.find((x) => x.strategy === 'mobile' && !x.error);
-      const lcp = m?.field?.lcpMs ?? m?.lcpMs ?? null;
-      return `<tr><td><strong>${e(t.label)}</strong></td><td class="n">${num(t.pageCount)}</td><td class="n">${ms(t.ttfbMedianMs)}</td><td class="n">${ms(t.ttfbP90Ms)}</td><td class="n">${m?.performanceScore ?? '—'}</td><td class="n">${lcp === null ? '—' : `${(lcp / 1000).toFixed(1)} s`}</td><td>${t.representatives[0] ? urlLink(t.representatives[0], site) : '—'}</td></tr>`;
-    })
-    .join('')}</tbody></table></div>`;
-}
-
 /** A self-contained HTML report: inline CSS, no scripts, readable on phones, light and dark. */
 export function renderHtmlReport(data: ReportData): string {
   const { summary: s } = data;
@@ -150,10 +138,6 @@ ${data.issues.length ? data.issues.map((issue, i) => issueBlock(issue, site, i <
 <h2>Important pages that need more links</h2>
 <p class="muted">High PageRank or sitemap priority, but few links from page content.</p>
 ${pageTable(data.underlinked, site)}
-
-<h2>Speed by template</h2>
-<p class="muted">Pages grouped by URL pattern and layout. Fixing a slow template fixes every page that uses it.</p>
-${templateTable(data.templates, site)}
 
 <h2>Strongest pages (internal PageRank)</h2>
 ${pageTable(data.topPages, site)}

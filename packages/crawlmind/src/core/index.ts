@@ -50,25 +50,6 @@ export {
 export { isGenericAnchor, GENERIC_ANCHORS } from './config/generic-anchors.js';
 export { THRESHOLDS } from './config/thresholds.js';
 export {
-  PsiClient,
-  parsePsiResponse,
-  PSI_ENDPOINT,
-  type PsiResult,
-  type PsiStrategy,
-  type PsiClientOptions,
-} from './speed/psi.js';
-export {
-  SpeedService,
-  templateInsight,
-  type TemplateInfo,
-  type TemplateMeasurement,
-  type PsiMeasurement,
-  type MeasureOptions,
-} from './speed/service.js';
-export { groupTemplates, buildTemplates } from './speed/templates.js';
-export { urlPatterns, isVariableSegment } from './speed/url-pattern.js';
-export { minHash, signatureSimilarity, skeletonPaths } from './speed/fingerprint.js';
-export {
   TransformersEmbedder,
   DEFAULT_MODEL,
   type Embedder,
