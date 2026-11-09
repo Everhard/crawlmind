@@ -20,7 +20,8 @@ export function describeCrawl(crawl: CrawlInfo): string {
 export function describeProgress(progress: CrawlProgress): string {
   if (progress.phase === 'external')
     return `Checking external links (${progress.externalChecked} done).`;
-  return `${progress.phase}: ${progress.pagesCrawled}/${progress.maxPages} pages, ${progress.pagesQueued} discovered, ${progress.errors} errors.`;
+  const limit = progress.maxPages > 0 ? `/${progress.maxPages}` : '';
+  return `${progress.phase}: ${progress.pagesCrawled}${limit} pages, ${progress.pagesQueued} discovered, ${progress.errors} errors.`;
 }
 
 export function describeStatus(report: CrawlStatusReport): string {

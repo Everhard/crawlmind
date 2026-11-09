@@ -114,7 +114,7 @@ describe('CLI', () => {
   });
 
   it('rejects invalid option values', async () => {
-    const run = await runCliCaptured([...base(), 'crawl', sites.site.origin, '--max-pages', '0']);
+    const run = await runCliCaptured([...base(), 'crawl', sites.site.origin, '--max-pages', '-1']);
     expect(run.exitCode).toBe(1);
     expect(run.stderr).toMatch(/expected an integer/);
   });

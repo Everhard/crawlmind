@@ -14,7 +14,7 @@ export function registerPrompts(server: McpServer): void {
         'Full technical SEO audit of a site with Crawlmind, ending in a prioritized fix list.',
       argsSchema: {
         url: z.string().describe('Site to audit, e.g. https://example.com'),
-        max_pages: z.string().optional().describe('Crawl size, default 500'),
+        max_pages: z.string().optional().describe('Crawl size, default 1000 (0 = no limit)'),
       },
     },
     ({ url, max_pages }) =>

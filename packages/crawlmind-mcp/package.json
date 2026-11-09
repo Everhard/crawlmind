@@ -1,6 +1,6 @@
 {
   "name": "crawlmind-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for AI-native SEO audits. Shortcut for `crawlmind mcp`.",
   "type": "module",
   "license": "MIT",
@@ -35,6 +35,6 @@
     "prepack": "node -e \"require('fs').copyFileSync('../../LICENSE','LICENSE')\""
   },
   "dependencies": {
-    "crawlmind": "0.1.0"
+    "crawlmind": "0.2.0"
   }
 }

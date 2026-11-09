@@ -3,7 +3,7 @@
   "name": "io.github.everhard/crawlmind",
   "title": "Crawlmind",
   "description": "SEO audits: broken links, internal link suggestions, crawl diffs and reports.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "websiteUrl": "https://github.com/Everhard/crawlmind",
   "repository": {
     "url": "https://github.com/Everhard/crawlmind",
@@ -13,7 +13,7 @@
     {
       "registryType": "npm",
       "identifier": "crawlmind-mcp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "transport": {
         "type": "stdio"
       },

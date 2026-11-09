@@ -16,7 +16,8 @@ How Crawlmind crawls a site and computes its results.
 
 - Identifies itself as `CrawlmindBot/<version> (+https://github.com/Everhard/crawlmind)`.
 - Follows robots.txt, including `Crawl-delay` (capped at 10 s), unless told not to.
-- Defaults: 500 pages (hard cap 10,000), depth 10, 4 parallel requests, 250 ms between
+- One site per crawl (optionally with subdomains).
+- Defaults: 1,000 pages (`0` means no limit), depth 10, 4 parallel requests, 250 ms between
   requests to the same host, 15 s timeout, 5 MB per page.
 - Only `text/html` is parsed. Sitemaps (from robots.txt and `/sitemap.xml`, indexes and gzip
   included) add URLs that links do not reach.

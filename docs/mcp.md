@@ -74,12 +74,33 @@ the add-on by hand, add `-p @huggingface/transformers` to the `npx` arguments:
 - `crawlmind://checks/{id}` documents each check (why it matters, how to fix).
 - `crawlmind://crawls/{id}/summary` gives the summary of a crawl.
 
-## Safety
+## Configuration
 
-- MCP clients cannot crawl private, loopback and link-local addresses unless the server runs
-  with `CRAWLMIND_ALLOW_PRIVATE_NETWORKS=1`.
-- MCP clients write reports only inside `~/.crawlmind/reports` unless the server runs with
-  `CRAWLMIND_ALLOW_REPORT_PATHS=1`.
+The server reads these environment variables:
 
-Both rules exist so that instructions hidden in a crawled page cannot make the AI client scan
-your local network or overwrite your files. See [how it works](how-it-works.md#crawling-rules).
+| Variable                           | Purpose                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------- |
+| `CRAWLMIND_HOME`                   | Data directory (default `~/.crawlmind`)                                   |
+| `CRAWLMIND_ALLOW_PRIVATE_NETWORKS` | `1` lets MCP clients crawl private and local addresses                    |
+| `CRAWLMIND_LOG_LEVEL`              | `debug`, `info`, `warn` (default), `error` or `silent`; logs go to stderr |
+| `CRAWLMIND_ALLOW_REPORT_PATHS`     | `1` lets MCP clients write reports outside `~/.crawlmind/reports`         |
+
+Set them in the client config:
+
+```json
+{
+  "mcpServers": {
+    "crawlmind": {
+      "command": "npx",
+      "args": ["-y", "crawlmind-mcp"],
+      "env": { "CRAWLMIND_ALLOW_PRIVATE_NETWORKS": "1" }
+    }
+  }
+}
+```
+
+Both `ALLOW` switches are off by default so that instructions hidden in a crawled page cannot
+make the AI client scan your local network or overwrite your files. See [how it works](how-it-works.md#crawling-rules).
+
+In the CLI, `--home <dir>` sets the data directory and `crawl --allow-private` crawls local
+addresses. The CLI writes reports wherever you tell it to.

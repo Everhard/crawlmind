@@ -56,7 +56,7 @@ export function registerCrawlTools(
         const report = engine.crawls.status(crawl.crawlId);
         return toolResult(
           report,
-          `Started crawl ${crawl.crawlId} of ${crawl.site} (up to ${crawl.options.maxPages} pages). ` +
+          `Started crawl ${crawl.crawlId} of ${crawl.site} (${crawl.options.maxPages > 0 ? `up to ${crawl.options.maxPages} pages` : 'no page limit'}). ` +
             `Call get_crawl_status with crawl_id "${crawl.crawlId}" and wait_seconds to follow it.`,
         );
       }

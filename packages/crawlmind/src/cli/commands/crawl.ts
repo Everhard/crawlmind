@@ -48,8 +48,8 @@ export function registerCrawlCommand(program: Command, getContext: () => CliCont
     .argument('<url>', 'start URL, e.g. https://example.com')
     .option(
       '-n, --max-pages <n>',
-      'maximum pages to fetch',
-      intOption(1, CRAWL_LIMITS.maxPages),
+      'maximum pages to fetch (0 = no limit)',
+      intOption(0, Number.MAX_SAFE_INTEGER),
       CRAWL_DEFAULTS.maxPages,
     )
     .option(
@@ -154,7 +154,7 @@ async function followCrawl(ctx: CliContext, crawl: CrawlInfo): Promise<CrawlInfo
         text = 'Analyzing';
         break;
       default:
-        text = `${c.bold(formatNumber(p.pagesCrawled))}${c.dim(`/${formatNumber(p.maxPages)}`)} pages ${c.dim(sym.dot)} ${errors} ${c.dim(sym.dot)} ${rate} pages/s`;
+        text = `${c.bold(formatNumber(p.pagesCrawled))}${p.maxPages > 0 ? c.dim(`/${formatNumber(p.maxPages)}`) : ''} pages ${c.dim(sym.dot)} ${errors} ${c.dim(sym.dot)} ${rate} pages/s`;
     }
     if (p.currentUrl) {
       const room = Math.max(10, terminalWidth() - stripAnsi(text).length - 8);

@@ -4,7 +4,28 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [0.1.0] - Unreleased
+## [0.2.0] - 2026-11-09
+
+### Added
+
+- The embeddings add-on installs on request: `suggest` and `cannibalization` (CLI and MCP)
+  offer to install it when it is missing, MCP clients ask the user through elicitation, and
+  `install_embeddings` / `crawlmind addon install` install it into `~/.crawlmind/addons`
+  without a restart. `crawlmind addon status` shows whether it is installed.
+- `maxPages: 0` (CLI `-n 0`) crawls the whole site with no page limit.
+
+### Changed
+
+- No hard cap on crawl size (was 10,000 pages); the default is 1,000 pages (was 500).
+- `ping` also reports whether the embeddings add-on is installed.
+- Reference documentation moved from the README to `docs/` (MCP server, audit checks, how it
+  works).
+
+### Removed
+
+- Speed by template (PageSpeed Insights).
+
+## [0.1.0] - 2026-10-21
 
 ### Added
 
@@ -49,9 +70,5 @@ All notable changes to this project are documented here. The format follows
   `compare_crawls`, CLI `diff`.
 - Reports: self-contained HTML (inline CSS, light/dark, mobile) and Markdown. MCP tool
   `export_report`, CLI `report`; existing files are never overwritten by default.
-- Embeddings add-on installs on request: `suggest` and `cannibalization` (CLI and MCP) offer
-  to install it when it is missing, MCP clients are asked through elicitation, and
-  `install_embeddings` / `crawlmind addon install` install it into `~/.crawlmind/addons`
-  without a restart. `ping` and `crawlmind addon status` report whether it is installed.
 - MCP prompt `seo_audit`; `server.json` for the MCP Registry.
 - Build (tsup), lint (ESLint, Prettier), typecheck, tests (Vitest) and CI on Node 22 and 24.

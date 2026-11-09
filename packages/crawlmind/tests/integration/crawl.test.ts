@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { Engine } from '../../src/core/index.js';
+import { CrawlOptionsSchema, type Engine } from '../../src/core/index.js';
 import { crawlAndWait, createTestEngine } from '../helpers/engine.js';
 import { startFixtureSites } from '../helpers/fixture-server.js';
 
@@ -173,6 +173,29 @@ describe('crawl limits and control', () => {
     });
     expect(crawl.status).toBe('completed');
     expect(crawl.pagesCrawled).toBe(3);
+  });
+
+  it('crawls the whole site with maxPages 0', async () => {
+    const unlimited = await crawlAndWait(engine, {
+      url: sites.site.origin,
+      maxPages: 0,
+      checkExternalLinks: false,
+    });
+    const large = await crawlAndWait(engine, {
+      url: sites.site.origin,
+      maxPages: 100_000,
+      checkExternalLinks: false,
+    });
+    expect(unlimited.status).toBe('completed');
+    expect(unlimited.pagesCrawled).toBeGreaterThan(3);
+    expect(unlimited.pagesCrawled).toBe(large.pagesCrawled);
+  });
+
+  it('defaults to 1000 pages and has no upper cap', () => {
+    const schema = CrawlOptionsSchema;
+    expect(schema.parse({ url: 'https://example.com' }).maxPages).toBe(1000);
+    expect(schema.parse({ url: 'https://example.com', maxPages: 50_000 }).maxPages).toBe(50_000);
+    expect(() => schema.parse({ url: 'https://example.com', maxPages: -1 })).toThrow();
   });
 
   it('respects maxDepth', async () => {

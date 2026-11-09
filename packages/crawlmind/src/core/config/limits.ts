@@ -1,6 +1,7 @@
 /** Crawl defaults and hard limits. Kept in one place so docs and schemas agree. */
 export const CRAWL_DEFAULTS = {
-  maxPages: 500,
+  /** 0 means no limit. */
+  maxPages: 1000,
   maxDepth: 10,
   concurrency: 4,
   delayMs: 250,
@@ -11,7 +12,6 @@ export const CRAWL_DEFAULTS = {
 } as const;
 
 export const CRAWL_LIMITS = {
-  maxPages: 10_000,
   maxDepth: 50,
   concurrency: 16,
   delayMs: 10_000,

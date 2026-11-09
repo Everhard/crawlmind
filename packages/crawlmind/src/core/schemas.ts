@@ -19,10 +19,12 @@ export const crawlOptionsShape = {
   maxPages: z
     .number()
     .int()
-    .min(1)
-    .max(CRAWL_LIMITS.maxPages)
+    .min(0)
     .default(CRAWL_DEFAULTS.maxPages)
-    .describe(`Maximum pages to fetch (hard cap ${CRAWL_LIMITS.maxPages})`),
+    .describe(
+      `Maximum pages to fetch (default ${CRAWL_DEFAULTS.maxPages}). 0 means no limit: ` +
+        'large sites can then take hours, so use it only when the user asks for the whole site.',
+    ),
   maxDepth: z
     .number()
     .int()

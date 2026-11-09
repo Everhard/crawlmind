@@ -1,6 +1,6 @@
 {
   "name": "crawlmind",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AI-native SEO audits from the terminal or any MCP client: broken links, internal link suggestions, crawl diffs.",
   "type": "module",
   "license": "MIT",

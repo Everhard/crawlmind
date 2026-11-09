@@ -29,14 +29,14 @@ export function crawlProgressNotifier(
     const message =
       p.phase === 'external'
         ? `Checking external links: ${p.externalChecked} checked`
-        : `${p.phase}: ${p.pagesCrawled}/${p.maxPages} pages, ${p.errors} errors`;
+        : `${p.phase}: ${p.pagesCrawled}${p.maxPages > 0 ? `/${p.maxPages}` : ''} pages, ${p.errors} errors`;
     void extra
       .sendNotification({
         method: 'notifications/progress',
         params: {
           progressToken: token,
           progress: last,
-          ...(p.phase === 'crawling' ? { total: p.maxPages } : {}),
+          ...(p.phase === 'crawling' && p.maxPages > 0 ? { total: p.maxPages } : {}),
           message,
         },
       })

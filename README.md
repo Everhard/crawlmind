@@ -9,6 +9,19 @@ should add and shows what changed between two crawls.
 [![MCP](https://img.shields.io/badge/MCP-server-blue)](https://modelcontextprotocol.io)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/Everhard/crawlmind/blob/main/LICENSE)
 
+## 💬 Just ask your AI
+
+Connect Crawlmind to Claude, Cursor or any MCP client ([install](#install)) and talk to it:
+
+| You ask                                                        | Crawlmind does                                                       |
+| -------------------------------------------------------------- | -------------------------------------------------------------------- |
+| 🩺 _"Audit https://example.com and give me the top 10 fixes."_ | Crawls the site, ranks the issues and explains how to fix each one   |
+| 🔗 _"Which internal links should I add to my blog?"_           | Finds related pages that don't link to each other, with anchor ideas |
+| 🥊 _"Do any of my pages compete for the same keywords?"_       | Lists page pairs that cover the same topic                           |
+| 🐢 _"Which pages on my site respond slowest?"_                 | Ranks pages by server response time (TTFB)                           |
+| 🔄 _"Crawl again and tell me what broke since last week."_     | Compares two crawls: new 404s, lost links, slower pages              |
+| 📄 _"Make an HTML report of the last crawl."_                  | Writes a single-file report you can send to a client or a team       |
+
 ## What it can do
 
 | Feature                            | What you get                                                                                                                           | CLI                    | MCP tool                     |
@@ -27,7 +40,11 @@ should add and shows what changed between two crawls.
 | 🤖 **Ready-made AI workflows**     | The `seo_audit` prompt ends with a prioritized fix list; `internal_linking_plan` builds a table of links to add                        | —                      | prompts                      |
 
 ★ Other crawlers don't do this. Link suggestions and cannibalization use local multilingual
-embeddings: no API keys, nothing leaves your machine.
+embeddings: no API keys, nothing leaves your machine. The embeddings add-on (about 800 MB)
+installs itself the first time you use these features, after you confirm.
+
+Crawlmind analyzes pages as the server sends them and does not run JavaScript, so sites that
+build their content in the browser show up nearly empty.
 
 More detail: [all audit checks](https://github.com/Everhard/crawlmind/blob/main/docs/checks.md),
 [MCP tools](https://github.com/Everhard/crawlmind/blob/main/docs/mcp.md) and
@@ -48,13 +65,7 @@ claude mcp add crawlmind -- npx -y crawlmind-mcp
 For Claude Desktop, Cursor and other clients, see the
 [JSON config](https://github.com/Everhard/crawlmind/blob/main/docs/mcp.md#setup).
 
-Then ask your AI client:
-
-- "Audit https://example.com and give me the top 10 fixes."
-- "Which internal links should I add to my blog?"
-- "Which pages on my site respond slowest?"
-- "Crawl the site again and tell me what broke since last week."
-- "Export an HTML report of the last crawl to ~/Desktop/audit.html."
+Then ask your AI client anything, for example the questions [above](#-just-ask-your-ai).
 
 ### As a CLI
 
@@ -64,22 +75,47 @@ npx crawlmind --help
 npm install -g crawlmind
 ```
 
+**🕷️ Crawl**
+
 ```bash
 crawlmind crawl https://example.com          # crawl with live progress, then a summary
-crawlmind crawl https://example.com -n 2000  # up to 2,000 pages
-crawlmind summary                            # key numbers and top issues of the latest crawl
-crawlmind issues --severity critical         # issues with examples
-crawlmind issues --check links.broken_internal   # every affected URL of one check
-crawlmind page /pricing                      # everything about one URL
-crawlmind links /pricing --content-only      # who links here, from the main content
-crawlmind top --by underlinked               # important pages that need more links
-crawlmind suggest                            # internal links to add (needs the embeddings add-on)
-crawlmind suggest --target /pricing          # links that should point to one page
-crawlmind cannibalization                    # pages competing for the same topic
-crawlmind diff                               # what changed between the two latest crawls
-crawlmind report -o audit.html               # self-contained HTML report (or -f md)
-crawlmind sql "SELECT url, ttfb_ms FROM pages ORDER BY ttfb_ms DESC LIMIT 10"
+crawlmind crawl https://example.com -n 2000  # up to 2,000 pages (default 1,000)
+crawlmind crawl https://example.com -n 0     # the whole site, no page limit
 crawlmind crawls                             # past crawls
+```
+
+**🩺 Audit**
+
+```bash
+crawlmind summary                               # key numbers and top issues of the latest crawl
+crawlmind issues --severity critical            # issues with examples
+crawlmind issues --check links.broken_internal  # every affected URL of one check
+crawlmind page /pricing                         # everything about one URL
+```
+
+**🔗 Links**
+
+```bash
+crawlmind links /pricing --content-only  # who links here, from the main content
+crawlmind top --by underlinked           # important pages that need more links
+crawlmind suggest                        # internal links to add (installs embeddings on first use)
+crawlmind suggest --target /pricing      # links that should point to one page
+crawlmind cannibalization                # pages competing for the same topic
+```
+
+**🔄 Compare and export**
+
+```bash
+crawlmind diff                  # what changed between the two latest crawls
+crawlmind report -o audit.html  # self-contained HTML report (or -f md)
+```
+
+**🧮 Advanced**
+
+```bash
+# read-only SQL on the crawl database
+crawlmind sql "SELECT url, ttfb_ms FROM pages ORDER BY ttfb_ms DESC LIMIT 10"
+crawlmind addon status  # is the embeddings add-on installed?
 ```
 
 Every command takes `--json` for machine-readable output (progress goes to stderr). In CI,
@@ -88,48 +124,15 @@ Every command takes `--json` for machine-readable output (progress goes to stder
 The CLI and the MCP server share one local database, so you can crawl from the terminal and then
 ask your AI client about the result.
 
-### The embeddings add-on
-
-Internal link suggestions and cannibalization run a local embedding model. It takes about
-700 MB of packages plus a 120 MB model, so it is an optional add-on, and everything else works
-without it.
-
-You don't need to install it up front. The first time you ask for link suggestions, Crawlmind
-asks whether to install it, installs it into `~/.crawlmind`, and then answers your request. You
-can also install it yourself: ask your AI client to "install the Crawlmind embeddings add-on",
-or run:
-
-```bash
-crawlmind addon install   # crawlmind addon status shows whether it is installed
-```
-
-Some MCP clients (Claude Desktop, for example) can't show the server's question yet. In those
-clients the AI asks you in the chat instead, and installs the add-on once you agree.
-
-## Configuration
-
-| Variable                           | Purpose                                                                   |
-| ---------------------------------- | ------------------------------------------------------------------------- |
-| `CRAWLMIND_HOME`                   | Data directory (default `~/.crawlmind`)                                   |
-| `CRAWLMIND_ALLOW_PRIVATE_NETWORKS` | `1` lets MCP clients crawl private and local addresses                    |
-| `CRAWLMIND_LOG_LEVEL`              | `debug`, `info`, `warn` (default), `error` or `silent`; logs go to stderr |
-| `CRAWLMIND_ALLOW_REPORT_PATHS`     | `1` lets MCP clients write reports outside `~/.crawlmind/reports`         |
-
-## Limits
-
-- No JavaScript rendering: pages are analyzed as the server sends them. Sites that build their
-  content in the browser show up nearly empty.
-- One site per crawl (optionally with subdomains), up to 10,000 pages.
-- Crawlmind only reads. No tool changes the audited site.
-
-What the crawler sends and which limits it respects: see the
-[crawling rules](https://github.com/Everhard/crawlmind/blob/main/docs/how-it-works.md#crawling-rules).
-
 ## Privacy
 
 Everything stays on your machine, in `~/.crawlmind` (override with `CRAWLMIND_HOME`). Crawlmind
 contacts only the site you crawl. When you install the embeddings add-on, it also contacts the
 npm registry and Hugging Face once, to download the packages and the model. No telemetry.
+
+Crawlmind only reads; it never changes the audited site. What the crawler sends and which limits
+it respects: see the
+[crawling rules](https://github.com/Everhard/crawlmind/blob/main/docs/how-it-works.md#crawling-rules).
 
 ## Development
 

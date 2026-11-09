@@ -90,6 +90,7 @@ export async function runCrawl(params: RunCrawlParams): Promise<CrawlStats> {
 
     let active = 0;
     let reserved = 0; // fetches started, to enforce maxPages exactly
+    const pageLimit = options.maxPages || Number.POSITIVE_INFINITY; // 0 = no limit
 
     const withSitemapInfo = (page: PageRecord): PageRecord => {
       const entry = sitemap.get(page.url);
@@ -193,7 +194,7 @@ export async function runCrawl(params: RunCrawlParams): Promise<CrawlStats> {
         // The final page of an internal redirect is a page of the site in its own right.
         if (last && result.final && internal(last.url) && !seen.has(last.url)) {
           seen.add(last.url);
-          if (reserved < options.maxPages) {
+          if (reserved < pageLimit) {
             reserved++;
             progress.pagesCrawled++;
             discovered = recordResponse(last.url, depth, result.final);
@@ -212,7 +213,7 @@ export async function runCrawl(params: RunCrawlParams): Promise<CrawlStats> {
     progress.phase = 'crawling';
     report();
     const worker = async () => {
-      while (!signal?.aborted && reserved < options.maxPages) {
+      while (!signal?.aborted && reserved < pageLimit) {
         const item = linkQueue.shift() ?? sitemapQueue.shift();
         if (!item) {
           if (active === 0) return;
